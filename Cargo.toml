@@ -1,0 +1,2 @@
+[workspace]
+members = ["radar_worker"]
