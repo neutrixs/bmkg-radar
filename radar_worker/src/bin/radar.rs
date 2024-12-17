@@ -1,19 +1,38 @@
-use std::env;
-use radar_worker::map::{MapImagery, ZoomSetting};
+use clap::Parser;
 use radar_worker::map::bounding::bounding_box;
+use radar_worker::map::{MapImagery, ZoomSetting};
+use std::path::PathBuf;
 use tokio::runtime::Runtime;
 
-fn main() {
-    let mut args: Vec<String> = env::args().collect();
-    args = args.drain(1..).collect();
+#[derive(Parser, Debug)]
+struct Args {
+    #[arg(short, long, help = "Specify the place name to render")]
+    place: String,
+    #[arg(
+        short,
+        long,
+        value_name = "PATH",
+        help = "Specify the output path",
+        default_value = "output.png"
+    )]
+    output: String,
+}
 
-    let place = args.join(" ");
-    println!("{}", place);
+fn main() {
+    let args = Args::parse();
 
     let _ = Runtime::new().unwrap().block_on(async {
-        let bounds = bounding_box(String::from("Bandung")).await.unwrap();
-        let _ = MapImagery::builder(bounds)
-            .zoom_setting(ZoomSetting::MaxTiles(200))
+        let bounds = bounding_box(args.place).await.unwrap();
+        let imagery = MapImagery::builder(bounds)
+            .zoom_setting(ZoomSetting::MaxTiles(75))
             .build();
+        let image = imagery.render().await;
+        if let Err(e) = image {
+            panic!("{}", e);
+        }
+        let image = image.unwrap();
+        let path = PathBuf::from(&args.output);
+
+        image.save(&path).expect("Failed to save the image");
     });
 }
