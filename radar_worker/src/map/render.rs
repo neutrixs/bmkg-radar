@@ -237,4 +237,25 @@ mod tests {
         assert_abs_diff_eq!(exact.north, 17013.624785892, epsilon = 0.000001);
         assert_abs_diff_eq!(exact.south, 17016.249974678, epsilon = 0.000001);
     }
+
+    #[test]
+    fn test_iterator() {
+        let bounds = [
+            Coordinate {
+                lat: 69.78,
+                lon: 170.42,
+            },
+            Coordinate {
+                lat: 60.84,
+                lon: -155.23,
+            }
+        ];
+        let meta = CanvasMetadata::new(bounds, 5);
+
+        let iter_cols_ref = vec![31, 0, 1, 2];
+        assert_eq!(meta.iter_cols().data, iter_cols_ref);
+
+        let iter_rows_ref = vec![7, 8, 9];
+        assert_eq!(meta.iter_rows().data, iter_rows_ref);
+    }
 }
