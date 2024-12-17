@@ -11,12 +11,12 @@ use std::path::PathBuf;
 const TILES_BASE_URL: &str = "https://tile.openstreetmap.org/";
 
 #[derive(Hash)]
-struct URLHash {
-    url: String,
+struct ContentHash {
+    content: String,
 }
 
 fn _hash_tile_url(url: &String) -> String {
-    let url = URLHash { url: url.clone() };
+    let url = ContentHash { content: url.clone() };
     let mut hasher = DefaultHasher::new();
     url.hash(&mut hasher);
     let hash = hasher.finish();
