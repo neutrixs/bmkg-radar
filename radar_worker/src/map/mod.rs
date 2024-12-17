@@ -6,8 +6,55 @@ mod util;
 
 use crate::common::Coordinate;
 use crate::map::util::_coord_to_tile_no_pow;
+use std::env;
+use url::Url;
 
 const DEFAULT_MAX_TILES: i32 = 50;
+
+#[derive(Copy, Clone, Debug)]
+pub enum MapStyle {
+    OpenStreetMap,
+    OpenCycleMap,
+    Transport,
+    Landscape,
+    Outdoors,
+    Atlas,
+    TransportDark,
+    Spinal,
+    Pioneer,
+    Neighborhood,
+    MobileAtlas,
+}
+
+impl MapStyle {
+    pub fn url(&self, x: i32, y: i32, z: i32) -> String {
+        let base: &str = match self {
+            Self::OpenStreetMap => "https://tile.openstreetmap.org",
+            Self::OpenCycleMap => "https://tile.thunderforest.com/cycle",
+            Self::Transport => "https://tile.thunderforest.com/transport",
+            Self::Landscape => "https://tile.thunderforest.com/landscape",
+            Self::Outdoors => "https://tile.thunderforest.com/outdoors",
+            Self::Atlas => "https://tile.thunderforest.com/atlas",
+            Self::TransportDark => "https://tile.thunderforest.com/transport-dark",
+            Self::Spinal => "https://tile.thunderforest.com/spinal-map",
+            Self::Pioneer => "https://tile.thunderforest.com/pioneer",
+            Self::Neighborhood => "https://tile.thunderforest.com/neighbourhood",
+            Self::MobileAtlas => "https://tile.thunderforest.com/mobile-atlas",
+        };
+
+        let mut url = Url::parse(&format!("{}/{}/{}/{}.png", base, z, x, y))
+            .expect("Error parsing URL");
+
+        if let Self::OpenStreetMap = self {} else {
+            url.query_pairs_mut().append_pair(
+                "apikey",
+                &env::var("THUNDERFOREST_APIKEY").unwrap_or("".to_string()),
+            );
+        }
+
+        url.to_string()
+    }
+}
 
 pub enum ZoomSetting {
     MaxTiles(i32),
@@ -17,6 +64,7 @@ pub enum ZoomSetting {
 pub struct MapImagery {
     bounds: [Coordinate; 2],
     zoom_level: i32,
+    style: MapStyle,
 }
 
 impl MapImagery {
@@ -28,6 +76,7 @@ impl MapImagery {
 pub struct MapImageryBuilder {
     bounds: [Coordinate; 2],
     zoom_setting: Option<ZoomSetting>,
+    style: Option<MapStyle>,
 }
 
 impl MapImageryBuilder {
@@ -35,6 +84,7 @@ impl MapImageryBuilder {
         Self {
             bounds,
             zoom_setting: None,
+            style: None,
         }
     }
 
@@ -56,6 +106,11 @@ impl MapImageryBuilder {
         self
     }
 
+    pub fn map_style(mut self, style: MapStyle) -> Self {
+        self.style = Some(style);
+        self
+    }
+
     pub fn build(&self) -> MapImagery {
         let zoom_level = match self.zoom_setting {
             Some(ZoomSetting::ZoomLevel(zl)) => zl,
@@ -66,6 +121,7 @@ impl MapImageryBuilder {
         MapImagery {
             bounds: self.bounds,
             zoom_level,
+            style: self.style.unwrap_or_else(|| MapStyle::OpenStreetMap)
         }
     }
 }

@@ -7,8 +7,7 @@ use std::fs::File;
 use std::hash::{DefaultHasher, Hash, Hasher};
 use std::io::copy;
 use std::path::PathBuf;
-
-const TILES_BASE_URL: &str = "https://tile.openstreetmap.org/";
+use url::Url;
 
 #[derive(Hash)]
 struct ContentHash {
@@ -16,7 +15,9 @@ struct ContentHash {
 }
 
 fn _hash_tile_url(url: &String) -> String {
-    let url = ContentHash { content: url.clone() };
+    let url = ContentHash {
+        content: url.clone(),
+    };
     let mut hasher = DefaultHasher::new();
     url.hash(&mut hasher);
     let hash = hasher.finish();
@@ -37,7 +38,7 @@ fn _load_file(path: &PathBuf) -> Result<Bytes, Box<dyn Error>> {
 
 impl MapImagery {
     pub(crate) async fn fetch_tile(&self, x: i32, y: i32) -> Result<DynamicImage, Box<dyn Error>> {
-        let url = format!("{}{}/{}/{}.png", TILES_BASE_URL, self.zoom_level, x, y);
+        let url = self.style.url(x, y, self.zoom_level);
         let hash = _hash_tile_url(&url);
         let filename = format!("tile-{}", hash);
 
@@ -58,7 +59,10 @@ impl MapImagery {
                 "Failed to fetch tile, {} {}: {}",
                 response.status().as_u16(),
                 response.status().canonical_reason().unwrap_or("unknown"),
-                &url
+                Url::parse(&url)
+                    .expect("Failed to parse URL")
+                    .host_str()
+                    .unwrap_or("Unknown domain"),
             )
             .into());
         }
