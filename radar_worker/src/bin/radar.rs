@@ -16,6 +16,13 @@ struct Args {
         default_value = "output.png"
     )]
     output: String,
+    #[arg(
+        long,
+        value_name = "AMOUNT",
+        help = "Specify the maximum amount of map tiles",
+        default_value = "50"
+    )]
+    max_tiles: i32
 }
 
 fn main() {
@@ -24,7 +31,7 @@ fn main() {
     let _ = Runtime::new().unwrap().block_on(async {
         let bounds = bounding_box(args.place).await.unwrap();
         let imagery = MapImagery::builder(bounds)
-            .zoom_setting(ZoomSetting::MaxTiles(75))
+            .zoom_setting(ZoomSetting::MaxTiles(args.max_tiles))
             .build();
         let image = imagery.render().await;
         if let Err(e) = image {
