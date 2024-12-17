@@ -129,10 +129,6 @@ impl MapImagery {
         &self,
         meta: &CanvasMetadata,
     ) -> Result<Vec<DynamicImage>, Box<dyn Error>> {
-        /*
-        TODO: the x tiles might reset to 0 at 180 longitude. account that the max x value is 2^z - 1
-         in the for loop
-        */
         let rows = meta.rows();
         let cols = meta.cols();
 
