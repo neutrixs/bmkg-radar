@@ -4,6 +4,11 @@ use crate::map::MapImagery;
 use image::{DynamicImage, GenericImage, ImageBuffer, Rgba};
 use std::error::Error;
 
+struct TilesIterator {
+    index: usize,
+    data: Vec<i32>,
+}
+
 struct Approx {
     north: i32,
     west: i32,
@@ -11,7 +16,7 @@ struct Approx {
     east: i32,
 }
 
-struct Exact {
+struct TileBounds {
     north: f64,
     west: f64,
     south: f64,
@@ -20,25 +25,45 @@ struct Exact {
 
 struct CanvasMetadata {
     range: [Position; 2],
+    z: i32,
+}
+
+impl Iterator for TilesIterator {
+    type Item = i32;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        if self.index < self.data.len() {
+            let item = self.data[self.index];
+            self.index += 1;
+            Some(item)
+        } else {
+            None
+        }
+    }
+}
+
+impl TileBounds {
+    pub fn approx(&self) -> Approx {
+        Approx {
+            north: self.north.floor() as i32,
+            west: self.west.floor() as i32,
+            south: self.south.ceil() as i32,
+            east: self.east.ceil() as i32,
+        }
+    }
 }
 
 impl CanvasMetadata {
     fn new(bounds: [Coordinate; 2], zoom_level: i32) -> Self {
         let range = _get_tiles_range(&bounds, zoom_level);
-        Self { range }
-    }
-
-    pub fn approx(&self) -> Approx {
-        Approx {
-            north: self.range[0].y.floor() as i32,
-            west: self.range[0].x.floor() as i32,
-            south: self.range[1].y.ceil() as i32,
-            east: self.range[1].x.ceil() as i32,
+        Self {
+            range,
+            z: zoom_level,
         }
     }
 
-    pub fn exact(&self) -> Exact {
-        Exact {
+    pub fn bounds(&self) -> TileBounds {
+        TileBounds {
             north: self.range[0].y,
             west: self.range[0].x,
             south: self.range[1].y,
@@ -46,13 +71,55 @@ impl CanvasMetadata {
         }
     }
 
+    pub fn normalize(&self) -> TileBounds {
+        let mut bounds = self.bounds();
+        let tiles_x_max = 2f64.powi(self.z);
+        if bounds.east < bounds.west {
+            bounds.east += tiles_x_max;
+        }
+        // umm since y works differently than x, I surely hope it will never clip
+
+        bounds
+    }
+
+    pub fn iter_rows(&self) -> TilesIterator {
+        let bounds = self.normalize().approx();
+        let mut data: Vec<i32> = Vec::new();
+        for y in bounds.north..bounds.south {
+            data.push(y);
+        }
+
+        TilesIterator {
+            index: 0,
+            data,
+        }
+    }
+
+    pub fn iter_cols(&self) -> TilesIterator {
+        let bounds = self.normalize().approx();
+        let max = 2i32.pow(self.z as u32);
+        let mut data: Vec<i32> = Vec::new();
+
+        for mut x in bounds.west..bounds.east {
+            if x >= max {
+                x -= max;
+            }
+            data.push(x);
+        }
+
+        TilesIterator {
+            index: 0,
+            data,
+        }
+    }
+
     pub fn rows(&self) -> i32 {
-        let approx = self.approx();
+        let approx = self.normalize().approx();
         approx.south - approx.north
     }
 
     pub fn cols(&self) -> i32 {
-        let approx = self.approx();
+        let approx = self.normalize().approx();
         approx.east - approx.west
     }
 }
@@ -63,19 +130,18 @@ impl MapImagery {
         meta: &CanvasMetadata,
     ) -> Result<Vec<DynamicImage>, Box<dyn Error>> {
         /*
-         TODO: the x tiles might reset to 0 at 180 longitude. account that the max x value is 2^z - 1
-          in the for loop
-         */
+        TODO: the x tiles might reset to 0 at 180 longitude. account that the max x value is 2^z - 1
+         in the for loop
+        */
         let rows = meta.rows();
         let cols = meta.cols();
-        let approx = meta.approx();
 
         let total_capacity = rows as usize * cols as usize;
         let mut tiles_images: Vec<DynamicImage> = Vec::with_capacity(total_capacity);
         let mut futures = Vec::with_capacity(total_capacity);
 
-        for y in approx.north..approx.south {
-            for x in approx.west..approx.east {
+        for y in meta.iter_rows() {
+            for x in meta.iter_cols() {
                 futures.push(self.fetch_tile(x, y));
             }
         }
@@ -111,8 +177,8 @@ impl MapImagery {
         // tiles_images not needed anymore
         drop(tiles_images);
 
-        let exact = meta.exact();
-        let approx = meta.approx();
+        let exact = meta.bounds();
+        let approx = meta.bounds().approx();
         let crop_left = (width as f64 * (exact.west - approx.west as f64)) as i32;
         let crop_top = (height as f64 * (exact.north - approx.north as f64)) as i32;
         let crop_right = (width as f64 * (approx.east as f64 - exact.east)) as i32;
@@ -153,8 +219,8 @@ mod tests {
         ];
 
         let meta = CanvasMetadata::new(bounds, 15);
-        let approx = meta.approx();
-        let exact = meta.exact();
+        let approx = meta.bounds().approx();
+        let exact = meta.bounds();
         let rows = meta.rows();
         let cols = meta.cols();
 
