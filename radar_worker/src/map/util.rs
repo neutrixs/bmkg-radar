@@ -18,7 +18,7 @@ pub fn _coord_to_tile(coord: &Coordinate, zoom: i32) -> Position {
 }
 
 pub fn _coord_to_tile_no_pow(coord: &Coordinate) -> Position {
-    let x = ((coord.lon + 180.) / 360.);
+    let x = (coord.lon + 180.) / 360.;
     let y_numerator = ((coord.lat * PI / 180.).tan() + 1. / (coord.lat * PI / 180.).cos()).ln();
     let y = (1. - y_numerator / PI) / 2.;
 
