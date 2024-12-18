@@ -9,9 +9,9 @@ const NOMINATIM_SEARCH_BASE_URL: &str = "https://nominatim.openstreetmap.org/sea
 //noinspection SpellCheckingInspection
 #[derive(Deserialize, Debug)]
 struct APISearchResult {
-    pub place_id: i32,
+    pub place_id: u64,
     pub osm_type: String,
-    pub osm_id: i32,
+    pub osm_id: u64,
     pub lat: String,
     pub lon: String,
     pub class: String,
@@ -65,9 +65,9 @@ impl APISearchResult {
 
 #[derive(Debug)]
 pub struct APIResult {
-    pub place_id: i32,
+    pub place_id: u64,
     pub osm_type: String,
-    pub osm_id: i32,
+    pub osm_id: u64,
     pub coordinate: Coordinate,
     pub class: String,
     pub place_type: String,
