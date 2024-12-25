@@ -21,8 +21,8 @@ struct RawAPIRadar {
     overlay_tlc: Vec<String>,
     #[serde(rename = "overlayBRC")]
     overlay_brc: Vec<String>,
-    #[serde(rename = "_id")]
-    id: String,
+    // #[serde(rename = "_id")]
+    // id: String,
     #[serde(rename = "Kota")]
     city: String,
     #[serde(rename = "Stasiun")]
