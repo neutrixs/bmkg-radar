@@ -1,5 +1,4 @@
 use image::{Rgba, RgbaImage};
-use std::time::Instant;
 
 pub fn overlay_image(a: RgbaImage, b: RgbaImage, opacity: f32) -> RgbaImage {
     assert!((0.0..=1.0).contains(&opacity));
@@ -7,7 +6,6 @@ pub fn overlay_image(a: RgbaImage, b: RgbaImage, opacity: f32) -> RgbaImage {
     assert_eq!(a.height(), b.height());
     let mut a = a;
 
-    let instant = Instant::now();
     let o_scale = opacity / 255f32;
     let opacity_inv = 1. - opacity;
 
@@ -42,8 +40,6 @@ pub fn overlay_image(a: RgbaImage, b: RgbaImage, opacity: f32) -> RgbaImage {
             a.put_pixel(x, y, new_px);
         }
     }
-
-    println!("{:?}", instant.elapsed());
 
     a
 }
