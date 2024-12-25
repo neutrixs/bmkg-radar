@@ -10,6 +10,13 @@ pub struct Position {
     pub y: f64,
 }
 
+#[derive(Clone, Debug)]
+pub struct PixelPosition {
+    pub x: u32,
+    pub y: u32,
+}
+
+#[derive(Copy, Clone, Debug)]
 pub enum Distance {
     KM(f64),
     Degrees(f64),

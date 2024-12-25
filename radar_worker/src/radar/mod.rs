@@ -1,26 +1,69 @@
+pub mod radar_data;
+pub mod render;
+mod formula;
+mod images_fetch;
+mod radar_overlap;
+mod image_crop;
+
 use crate::common::{Coordinate, Distance};
+use bytes::Bytes;
+use chrono::{DateTime, Utc};
+use image::RgbaImage;
 use std::collections::HashMap;
 use time::Duration;
 
 const DEFAULT_THRESHOLD: Duration = Duration::minutes(20);
 pub const DEFAULT_RANGE: Distance = Distance::KM(240.0);
+pub const DEFAULT_PRIORITY: i32 = 0;
+
+#[derive(Clone, Debug)]
+pub struct RadarImagesData {
+    time: DateTime<Utc>,
+    url: String,
+}
+
+#[derive(Clone, Debug)]
+pub struct RadarData {
+    bounds: [Coordinate; 2],
+    city: String,
+    station: String,
+    code: String,
+    center: Coordinate,
+    range: Distance,
+    priority: i32,
+    images: Vec<RadarImagesData>,
+}
+
+pub struct Image {
+    data: RadarData,
+    image: Bytes,
+}
 
 pub struct RadarImagery {
     bounds: [Coordinate; 2],
     age_threshold: Duration,
     enforce_age_threshold: bool,
     omit_radar: Vec<String>,
-    range_override: HashMap<String, Distance>,
-    priority_override: HashMap<String, i32>,
+    ranges: HashMap<String, Distance>,
+    priorities: HashMap<String, i32>,
 }
 
-struct RadarImageryBuilder {
+pub struct RadarImageryBuilder {
     bounds: [Coordinate; 2],
     age_threshold: Option<Duration>,
     enforce_age_threshold: Option<bool>,
     omit_radar: Option<Vec<String>>,
-    range_override: Option<HashMap<String, Distance>>,
-    priority_override: Option<HashMap<String, i32>>,
+}
+
+pub struct RenderResult {
+    pub used_radars: Vec<RadarData>,
+    pub image: RgbaImage,
+}
+
+impl RadarImagery {
+    pub fn builder(bounds: [Coordinate; 2]) -> RadarImageryBuilder {
+        RadarImageryBuilder::new(bounds)
+    }
 }
 
 impl RadarImageryBuilder {
@@ -30,8 +73,6 @@ impl RadarImageryBuilder {
             age_threshold: None,
             enforce_age_threshold: None,
             omit_radar: None,
-            range_override: None,
-            priority_override: None,
         }
     }
 
@@ -50,24 +91,23 @@ impl RadarImageryBuilder {
         self
     }
 
-    pub fn range_override(mut self, range_override: HashMap<String, Distance>) -> Self {
-        self.range_override = Some(range_override);
-        self
-    }
-
-    pub fn priority_override(mut self, priority_override: HashMap<String, i32>) -> Self {
-        self.priority_override = Some(priority_override);
-        self
-    }
-
     pub fn build(self) -> RadarImagery {
+        let mut ranges: HashMap<String, Distance> = HashMap::new();
+        ranges.insert("PWK".to_string(), Distance::KM(80.));
+        ranges.insert("CGK".to_string(), Distance::KM(85.));
+        ranges.insert("JAK".to_string(), Distance::KM(240.));
+
+        let mut priorities: HashMap<String, i32> = HashMap::new();
+        priorities.insert("PWK".to_string(), 1);
+        priorities.insert("CGK".to_string(), 1);
+
         RadarImagery {
             bounds: self.bounds,
             age_threshold: self.age_threshold.unwrap_or(DEFAULT_THRESHOLD),
             enforce_age_threshold: self.enforce_age_threshold.unwrap_or_default(),
             omit_radar: self.omit_radar.unwrap_or_default(),
-            range_override: self.range_override.unwrap_or_default(),
-            priority_override: self.priority_override.unwrap_or_default(),
+            ranges,
+            priorities,
         }
     }
 }
