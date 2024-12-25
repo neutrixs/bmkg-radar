@@ -30,7 +30,21 @@ pub(crate) fn hex_to_rgb(hex: &str) -> Result<Rgba<u8>, ParseIntError> {
 }
 
 
-pub(crate) fn change_pixel_color(pixel: &Rgba<u8>, radar: &RadarData) {
-    let colors = &radar.legends.colors;
-    println!("{:?}", colors);
+pub(crate) fn pixel_to_color_scheme(pixel: Rgba<u8>, radar: &RadarData) -> Rgba<u8> {
+    let default_scheme_iter = radar.legends.colors.iter().enumerate();
+    let mut pixel = pixel;
+
+    for (i, val) in default_scheme_iter {
+        if val != &pixel {
+            continue;
+        }
+
+        if i >= 14 {
+            pixel = Rgba([0, 0, 0, 0]);
+        } else {
+            pixel = COLOR_SCHEME[i];
+        }
+    }
+
+    pixel
 }

@@ -1,4 +1,5 @@
 use crate::common::PixelPosition;
+use crate::radar::color_scheme::pixel_to_color_scheme;
 use crate::radar::formula::{considerate_floor, min_q1_q2, q_inside, qx_circ, qx_half_dist, EqResult};
 use crate::radar::images_fetch::fetch_images;
 use crate::radar::{Image, RadarData, RadarImagery, RenderResult};
@@ -190,6 +191,7 @@ impl RadarImagery {
                     let pos_x_on_radar = pos_x_on_radar.round() as u32;
 
                     let pixel = cropped_image.get_pixel(pos_x_on_radar, pos_y_on_radar);
+                    let pixel = pixel_to_color_scheme(pixel, &radar.data);
                     canvas.put_pixel(x, y, pixel);
                     is_used = true;
                 }
