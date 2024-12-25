@@ -174,6 +174,7 @@ impl RadarImagery {
 mod tests {
     use super::*;
     use crate::common::Distance;
+    use crate::radar::radar_data::APILegends;
     use approx::assert_abs_diff_eq;
 
     #[test]
@@ -217,6 +218,10 @@ mod tests {
             range: Distance::Degrees(2.),
             priority: 0,
             images: vec![],
+            legends: APILegends {
+                levels: vec!(),
+                colors: vec!(),
+            },
         };
 
         let image = RgbaImage::new(2000, 2000);

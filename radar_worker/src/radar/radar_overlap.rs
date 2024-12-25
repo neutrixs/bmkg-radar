@@ -52,6 +52,7 @@ fn is_overlapping(a: &RadarData, b: &RadarData) -> bool {
 mod tests {
     use super::*;
     use crate::common::Coordinate;
+    use crate::radar::radar_data::APILegends;
 
     #[test]
     fn test_overlap() {
@@ -69,6 +70,10 @@ mod tests {
             range: Distance::Degrees(0.5),
             priority: 0,
             images: vec![],
+            legends: APILegends {
+                levels: vec!(),
+                colors: vec!(),
+            },
         };
 
         let mut b = a.clone();

@@ -39,10 +39,10 @@ struct RawAPIRadarlist {
     data: Vec<RawAPIRadar>,
 }
 
-#[derive(Deserialize, Debug)]
-struct APILegends {
-    levels: Vec<i32>,
-    colors: Vec<String>,
+#[derive(Deserialize, Debug, Clone)]
+pub(crate) struct APILegends {
+    pub(crate) levels: Vec<i32>,
+    pub(crate) colors: Vec<String>,
 }
 
 #[derive(Deserialize, Debug)]
@@ -86,7 +86,8 @@ impl RadarImagery {
         lat_overlap && lon_overlap
     }
 
-    async fn get_radar_images_data(radar: &RawAPIRadar) -> Result<Vec<RadarImagesData>, Box<dyn
+    async fn get_radar_images_data(radar: &RawAPIRadar) -> Result<(Vec<RadarImagesData>, APILegends),
+        Box<dyn
     Error>> {
         let token = env::var("BMKG_APIKEY");
         let base_url: String;
@@ -104,6 +105,7 @@ impl RadarImagery {
         let response = reqwest::get(url).await?.text().await?;
         let response: RawAPIDetailedData = serde_json::from_str(&response)?;
         let recent = response.last_one_hour;
+        let legends = response.legends;
 
         if recent.time_utc.len() != recent.file.len() {
             return Err("Broken API! time_utc.len() is NOT the same as file.len()!".into());
@@ -133,7 +135,7 @@ impl RadarImagery {
             })
         }
 
-        Ok(images)
+        Ok((images, legends))
     }
 
     pub async fn get_radar_data(&self) -> Result<Vec<RadarData>, Box<dyn Error>> {
@@ -174,7 +176,7 @@ impl RadarImagery {
                 continue;
             }
 
-            let images = Self::get_radar_images_data(&radar).await?;
+            let (images, legends) = Self::get_radar_images_data(&radar).await?;
 
             if images.len() == 0 {
                 continue;
@@ -207,6 +209,7 @@ impl RadarImagery {
                 priority,
                 range,
                 images,
+                legends,
             };
 
             container.push(formatted);
