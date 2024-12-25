@@ -19,13 +19,13 @@ pub const DEFAULT_RANGE: Distance = Distance::KM(240.0);
 pub const DEFAULT_PRIORITY: i32 = 0;
 
 #[derive(Clone, Debug)]
-pub struct RadarImagesData {
+pub(crate) struct RadarImagesData {
     time: DateTime<Utc>,
     url: String,
 }
 
 #[derive(Clone, Debug)]
-pub struct RadarData {
+pub(crate) struct RadarData {
     bounds: [Coordinate; 2],
     city: String,
     station: String,
@@ -37,7 +37,7 @@ pub struct RadarData {
     legends: Legends,
 }
 
-pub struct Image {
+pub(crate) struct Image {
     data: RadarData,
     image: Bytes,
 }

@@ -162,7 +162,7 @@ impl RadarImagery {
         Ok((images, legends))
     }
 
-    pub async fn get_radar_data(&self) -> Result<Vec<RadarData>, Box<dyn Error>> {
+    pub(crate) async fn get_radar_data(&self) -> Result<Vec<RadarData>, Box<dyn Error>> {
         let mut container: Vec<RadarData> = Vec::new();
         let response = reqwest::get(RADAR_LIST_API_URL).await?.text().await?;
         let response: RawAPIRadarlist = serde_json::from_str(&response)?;

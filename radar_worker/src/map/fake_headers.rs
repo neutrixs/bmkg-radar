@@ -1,6 +1,6 @@
 use reqwest::header::{HeaderMap, HeaderValue};
 
-pub fn _fake_headers() -> HeaderMap {
+pub(crate) fn _fake_headers() -> HeaderMap {
     let mut fake_headers = HeaderMap::new();
 
     fake_headers.insert(

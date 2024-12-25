@@ -28,7 +28,7 @@ struct APISearchResult {
 }
 
 impl APISearchResult {
-    pub fn into_api_result(self) -> Result<APIResult, Box<dyn Error>> {
+    fn into_api_result(self) -> Result<APIResult, Box<dyn Error>> {
         let lat = self.lat.parse::<f64>()?;
         let lon = self.lon.parse::<f64>()?;
 
@@ -64,7 +64,7 @@ impl APISearchResult {
 }
 
 #[derive(Debug)]
-pub struct APIResult {
+pub(crate) struct APIResult {
     pub place_id: u64,
     pub osm_type: String,
     pub osm_id: u64,
@@ -79,7 +79,7 @@ pub struct APIResult {
     pub bounding_box: [Coordinate; 2],
 }
 
-pub async fn search(place: &String) -> Result<Vec<APIResult>, Box<dyn Error>> {
+pub(crate) async fn search(place: &String) -> Result<Vec<APIResult>, Box<dyn Error>> {
     let escaped = Serializer::new(String::new())
         .append_pair("q", place.as_str())
         .append_pair("format", "json")

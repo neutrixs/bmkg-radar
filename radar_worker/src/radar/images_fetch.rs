@@ -2,7 +2,7 @@ use crate::radar::{Image, RadarData};
 use futures::future;
 use std::error::Error;
 
-pub async fn fetch_images(radars: Vec<RadarData>) -> Result<Vec<Image>, Box<dyn Error>> {
+pub(crate) async fn fetch_images(radars: Vec<RadarData>) -> Result<Vec<Image>, Box<dyn Error>> {
     let mut radars_to_be_used = Vec::new();
     let mut result = Vec::new();
     let mut async_requests = Vec::new();

@@ -62,7 +62,7 @@ impl CanvasMetadata {
         }
     }
 
-    pub fn bounds(&self) -> TileBounds {
+    fn bounds(&self) -> TileBounds {
         TileBounds {
             north: self.range[0].y,
             west: self.range[0].x,
@@ -71,7 +71,7 @@ impl CanvasMetadata {
         }
     }
 
-    pub fn normalize(&self) -> TileBounds {
+    fn normalize(&self) -> TileBounds {
         let mut bounds = self.bounds();
         let tiles_x_max = 2f64.powi(self.z);
         if bounds.east < bounds.west {
@@ -82,7 +82,7 @@ impl CanvasMetadata {
         bounds
     }
 
-    pub fn iter_rows(&self) -> TilesIterator {
+    fn iter_rows(&self) -> TilesIterator {
         let bounds = self.normalize().approx();
         let mut data: Vec<i32> = Vec::new();
         for y in bounds.north..bounds.south {
@@ -95,7 +95,7 @@ impl CanvasMetadata {
         }
     }
 
-    pub fn iter_cols(&self) -> TilesIterator {
+    fn iter_cols(&self) -> TilesIterator {
         let bounds = self.normalize().approx();
         let max = 2i32.pow(self.z as u32);
         let mut data: Vec<i32> = Vec::new();
@@ -113,12 +113,12 @@ impl CanvasMetadata {
         }
     }
 
-    pub fn rows(&self) -> i32 {
+    fn rows(&self) -> i32 {
         let approx = self.normalize().approx();
         approx.south - approx.north
     }
 
-    pub fn cols(&self) -> i32 {
+    fn cols(&self) -> i32 {
         let approx = self.normalize().approx();
         approx.east - approx.west
     }

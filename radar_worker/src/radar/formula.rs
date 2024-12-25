@@ -2,12 +2,12 @@
 
 use crate::radar::RadarData;
 
-pub enum EqResult {
+pub(crate) enum EqResult {
     NoResult,
     Real(f64, f64),
 }
 
-pub fn q_half_dist(a: &RadarData, b: &RadarData, x: f64, y: f64) -> f64 {
+pub(crate) fn q_half_dist(a: &RadarData, b: &RadarData, x: f64, y: f64) -> f64 {
     let x1 = a.center.lon;
     let x2 = b.center.lon;
 
@@ -17,7 +17,7 @@ pub fn q_half_dist(a: &RadarData, b: &RadarData, x: f64, y: f64) -> f64 {
     (x - x1).powi(2) - (x - x2).powi(2) + (y - y1).powi(2) - (y - y2).powi(2)
 }
 
-pub fn q_outside(r: &RadarData, x: f64, y: f64) -> f64 {
+pub(crate) fn q_outside(r: &RadarData, x: f64, y: f64) -> f64 {
     let x1 = r.center.lon;
     let y1 = r.center.lat;
     let r1 = r.range.to_degrees();
@@ -25,7 +25,7 @@ pub fn q_outside(r: &RadarData, x: f64, y: f64) -> f64 {
     -(x - x1).powi(2) - (y - y1).powi(2) + r1.powi(2)
 }
 
-pub fn q_inside(r: &RadarData, x: f64, y: f64) -> f64 {
+pub(crate) fn q_inside(r: &RadarData, x: f64, y: f64) -> f64 {
     let x1 = r.center.lon;
     let y1 = r.center.lat;
     let r1 = r.range.to_degrees();
@@ -34,7 +34,7 @@ pub fn q_inside(r: &RadarData, x: f64, y: f64) -> f64 {
 }
 
 
-pub fn qx_half_dist(a: &RadarData, b: &RadarData, y: f64) -> f64 {
+pub(crate) fn qx_half_dist(a: &RadarData, b: &RadarData, y: f64) -> f64 {
     let x1 = a.center.lon;
     let x2 = b.center.lon;
 
@@ -51,7 +51,7 @@ pub fn qx_half_dist(a: &RadarData, b: &RadarData, y: f64) -> f64 {
 // this is based on the equation of the radar's circle
 // isolating x
 // if the current line is outside of the circle, this will return None
-pub fn qx_circ(r: &RadarData, y: f64) -> EqResult {
+pub(crate) fn qx_circ(r: &RadarData, y: f64) -> EqResult {
     let x1 = r.center.lon;
     let y1 = r.center.lat;
     let r1 = r.range.to_degrees();
@@ -69,7 +69,8 @@ pub fn qx_circ(r: &RadarData, y: f64) -> EqResult {
     EqResult::Real(pos, neg)
 }
 
-pub fn min_q1_q2(radar: &RadarData, overlapping: &Vec<RadarData>, lon: f64, lat: f64) -> Vec<f64> {
+pub(crate) fn min_q1_q2(radar: &RadarData, overlapping: &Vec<RadarData>, lon: f64, lat: f64) ->
+Vec<f64> {
     let mut result = Vec::new();
     for overlapping_radar in overlapping {
         if radar.priority > overlapping_radar.priority {
@@ -89,7 +90,7 @@ pub fn min_q1_q2(radar: &RadarData, overlapping: &Vec<RadarData>, lon: f64, lat:
     result
 }
 
-pub fn considerate_floor(x: f64) -> f64 {
+pub(crate) fn considerate_floor(x: f64) -> f64 {
     let epsilon = f64::EPSILON * x.abs();
 
     if (x - x.round()).abs() < epsilon {

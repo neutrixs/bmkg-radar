@@ -1,14 +1,14 @@
 use crate::common::{Coordinate, Position};
 use std::f64::consts::PI;
 
-pub fn _get_tiles_range(bounds: &[Coordinate; 2], zoom_level: i32) -> [Position; 2] {
+pub(crate) fn _get_tiles_range(bounds: &[Coordinate; 2], zoom_level: i32) -> [Position; 2] {
     let start = _coord_to_tile(&bounds[0], zoom_level);
     let end = _coord_to_tile(&bounds[1], zoom_level);
 
     [start, end]
 }
 
-pub fn _coord_to_tile(coord: &Coordinate, zoom: i32) -> Position {
+pub(crate) fn _coord_to_tile(coord: &Coordinate, zoom: i32) -> Position {
     let pos = _coord_to_tile_no_pow(coord);
     let n = 2.0_f64.powf(zoom as f64);
     let x = n * pos.x;
@@ -17,7 +17,7 @@ pub fn _coord_to_tile(coord: &Coordinate, zoom: i32) -> Position {
     Position { x, y }
 }
 
-pub fn _coord_to_tile_no_pow(coord: &Coordinate) -> Position {
+pub(crate) fn _coord_to_tile_no_pow(coord: &Coordinate) -> Position {
     let x = (coord.lon + 180.) / 360.;
     let y_numerator = ((coord.lat * PI / 180.).tan() + 1. / (coord.lat * PI / 180.).cos()).ln();
     let y = (1. - y_numerator / PI) / 2.;
