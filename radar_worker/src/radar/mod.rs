@@ -7,7 +7,7 @@ mod image_crop;
 mod color_scheme;
 
 use crate::common::{Coordinate, Distance};
-use crate::radar::radar_data::APILegends;
+use crate::radar::radar_data::Legends;
 use bytes::Bytes;
 use chrono::{DateTime, Utc};
 use image::RgbaImage;
@@ -34,7 +34,7 @@ pub struct RadarData {
     range: Distance,
     priority: i32,
     images: Vec<RadarImagesData>,
-    legends: APILegends,
+    legends: Legends,
 }
 
 pub struct Image {

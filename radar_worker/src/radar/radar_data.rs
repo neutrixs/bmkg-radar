@@ -1,7 +1,9 @@
 use crate::common::{Coordinate, Distance};
+use crate::radar::color_scheme::hex_to_rgb;
 use crate::radar::{RadarData, RadarImagesData, DEFAULT_RANGE};
 use crate::radar::{RadarImagery, DEFAULT_PRIORITY};
 use chrono::{NaiveDateTime, TimeZone, Utc};
+use image::Rgba;
 use serde::Deserialize;
 use std::env;
 use std::error::Error;
@@ -45,6 +47,12 @@ pub(crate) struct APILegends {
     pub(crate) colors: Vec<String>,
 }
 
+#[derive(Debug, Clone)]
+pub(crate) struct Legends {
+    pub(crate) levels: Vec<i32>,
+    pub(crate) colors: Vec<Rgba<u8>>,
+}
+
 #[derive(Deserialize, Debug)]
 struct APILatest {
     #[serde(rename = "timeUTC")]
@@ -70,6 +78,22 @@ struct RawAPIDetailedData {
     last_one_hour: LastOneHour,
 }
 
+fn parse_legend(from: APILegends) -> Legends {
+    let colors = from.colors;
+    let levels = from.levels;
+    let mut colors_new = Vec::new();
+
+    for color in colors {
+        let parsed = hex_to_rgb(&color).unwrap_or_else(|_| Rgba([0, 0, 0, 0]));
+        colors_new.push(parsed);
+    }
+
+    Legends {
+        levels,
+        colors: colors_new,
+    }
+}
+
 impl RadarImagery {
     fn is_overlapping(&self, range: &[Coordinate; 2]) -> bool {
         let x = range;
@@ -86,7 +110,7 @@ impl RadarImagery {
         lat_overlap && lon_overlap
     }
 
-    async fn get_radar_images_data(radar: &RawAPIRadar) -> Result<(Vec<RadarImagesData>, APILegends),
+    async fn get_radar_images_data(radar: &RawAPIRadar) -> Result<(Vec<RadarImagesData>, Legends),
         Box<dyn
     Error>> {
         let token = env::var("BMKG_APIKEY");
@@ -105,7 +129,7 @@ impl RadarImagery {
         let response = reqwest::get(url).await?.text().await?;
         let response: RawAPIDetailedData = serde_json::from_str(&response)?;
         let recent = response.last_one_hour;
-        let legends = response.legends;
+        let legends = parse_legend(response.legends);
 
         if recent.time_utc.len() != recent.file.len() {
             return Err("Broken API! time_utc.len() is NOT the same as file.len()!".into());

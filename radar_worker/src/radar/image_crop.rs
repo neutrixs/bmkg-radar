@@ -174,7 +174,7 @@ impl RadarImagery {
 mod tests {
     use super::*;
     use crate::common::Distance;
-    use crate::radar::radar_data::APILegends;
+    use crate::radar::radar_data::{APILegends, Legends};
     use approx::assert_abs_diff_eq;
 
     #[test]
@@ -218,7 +218,7 @@ mod tests {
             range: Distance::Degrees(2.),
             priority: 0,
             images: vec![],
-            legends: APILegends {
+            legends: Legends {
                 levels: vec!(),
                 colors: vec!(),
             },
