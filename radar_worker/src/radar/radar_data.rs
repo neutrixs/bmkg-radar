@@ -114,7 +114,7 @@ impl RadarImagery {
             let url = &recent.file[i];
             let time = &recent.time_utc[i];
             let time = NaiveDateTime::parse_from_str(time, "%Y-%m-%d %H:%M UTC");
-            if let Err(e) = time {
+            if let Err(_) = time {
                 // you would think that when there are no images,
                 // the API would return an empty array
                 // BUT NOPE, WRONG!

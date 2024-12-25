@@ -1,5 +1,5 @@
 use crate::common::PixelPosition;
-use crate::radar::formula::{considerate_floor, min_q1_q2, EqResult, Q_inside, Qx_circ, Qx_half_dist};
+use crate::radar::formula::{considerate_floor, min_q1_q2, q_inside, qx_circ, qx_half_dist, EqResult};
 use crate::radar::images_fetch::fetch_images;
 use crate::radar::{Image, RadarData, RadarImagery, RenderResult};
 use image::codecs::png::PngDecoder;
@@ -96,7 +96,7 @@ impl RadarImagery {
             // if it is, just skip the line
             // TODO: we can actually calculate where this circ bound starts on y to fasten the
             //  calculation
-            match Qx_circ(&radar.data, latitude) {
+            match qx_circ(&radar.data, latitude) {
                 EqResult::NoResult => continue,
                 EqResult::Real(pos, neg) => {
                     longitude_to_check.extend(vec![pos, neg]);
@@ -106,16 +106,16 @@ impl RadarImagery {
             for overlapping_radar in &overlapping {
                 // half dist will only be applicable if their priority is the same
                 if radar.data.priority == overlapping_radar.priority {
-                    let half_dist = Qx_half_dist(&radar.data, overlapping_radar, latitude);
+                    let half_dist = qx_half_dist(&radar.data, overlapping_radar, latitude);
                     longitude_to_check.push(half_dist);
                 }
 
-                // Qx_circ for the overlapping radar
+                // qx_circ for the overlapping radar
                 // will only applicable if their priority is the same or higher
                 if overlapping_radar.priority < radar.data.priority {
                     continue;
                 }
-                match Qx_circ(overlapping_radar, latitude) {
+                match qx_circ(overlapping_radar, latitude) {
                     EqResult::NoResult => {}
                     EqResult::Real(pos, neg) => {
                         longitude_to_check.extend(vec![pos, neg]);
@@ -126,14 +126,14 @@ impl RadarImagery {
             let mut longitude_bounds: Vec<f64> = Vec::new();
 
             for longitude in longitude_to_check {
-                let mut current_radar_circ_bound = Q_inside(&radar.data, longitude, latitude);
+                let mut current_radar_circ_bound = q_inside(&radar.data, longitude, latitude);
                 let overlay_bounds = min_q1_q2(&radar.data, &overlapping, longitude, latitude);
                 for bound in overlay_bounds {
                     current_radar_circ_bound = current_radar_circ_bound.max(bound);
                 }
 
                 // if it equals zero, we're at the boundary
-                if (current_radar_circ_bound.abs() < 0.0000000001) {
+                if current_radar_circ_bound.abs() < 0.0000000001 {
                     longitude_bounds.push(longitude);
                 }
             }
@@ -191,6 +191,7 @@ impl RadarImagery {
 
                     let pixel = cropped_image.get_pixel(pos_x_on_radar, pos_y_on_radar);
                     canvas.put_pixel(x, y, pixel);
+                    is_used = true;
                 }
 
                 i += 2;

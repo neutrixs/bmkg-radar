@@ -41,7 +41,7 @@ fn is_overlapping(a: &RadarData, b: &RadarData) -> bool {
     let dy = a.center.lat - b.center.lat;
     let dist = Distance::Degrees((dx * dx + dy * dy).sqrt());
 
-    if (a.code == b.code) {
+    if a.code == b.code {
         return false;
     }
 
