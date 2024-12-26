@@ -3,6 +3,10 @@ name = "radar_worker"
 version = "0.1.0"
 edition = "2021"
 
+[[bin]]
+name = "radar"
+path = "src/bin/radar.rs"
+
 [dependencies]
 approx = "0.5.1"
 reqwest = { version = "0.12.9", features = ["json", "blocking"] }

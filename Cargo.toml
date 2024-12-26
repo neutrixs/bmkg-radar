@@ -1,2 +1,3 @@
 [workspace]
 members = ["radar_worker"]
+resolver = "2"
