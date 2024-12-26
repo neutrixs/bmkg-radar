@@ -7,7 +7,6 @@ pub fn overlay_image(a: RgbaImage, b: RgbaImage, opacity: f32) -> RgbaImage {
     let mut a = a;
 
     let o_scale = opacity / 255f32;
-    let opacity_inv = 1. - opacity;
 
     for y in 0..a.height() {
         for x in 0..a.width() {
@@ -19,22 +18,36 @@ pub fn overlay_image(a: RgbaImage, b: RgbaImage, opacity: f32) -> RgbaImage {
             // because the opacity of the radar could only be 255 or 0
             // but still account for when it's not
             // let o = b_pixel[3] as f32 * o_scale;
-            // let inv_o = 1.0 - o;
-            let (o, inv_o) = match b_pixel[3] {
-                255 => (opacity, opacity_inv),
-                0 => (0., 1.),
-                _ => {
-                    let o = b_pixel[3] as f32 * o_scale;
-                    let inv_o = 1.0 - o;
-                    (o, inv_o)
-                }
+            let o = match b_pixel[3] {
+                255 => opacity,
+                0 => 0.,
+                _ => b_pixel[3] as f32 * o_scale,
             };
 
             // not rounding will improve performance
-            // by around 3.8x.. which is wild
-            let r = (a_pixel[0] as f32 * inv_o + b_pixel[0] as f32 * o) as u8;
-            let g = (a_pixel[1] as f32 * inv_o + b_pixel[1] as f32 * o) as u8;
-            let b = (a_pixel[2] as f32 * inv_o + b_pixel[2] as f32 * o) as u8;
+            // by an insane amount which is wild
+            // so the 'common' way is to do a * (1 - opacity) + b * opacity
+            // however, this formula works exactly the same
+            // with one less multiplication, but one more addition
+            // since addition is cheaper in performance, that's what we'll go for
+
+            // most of the pixels will be zero when the radar is empty
+            // in that case, why bother calculating at all?
+            // even calculating by 0.0 takes time
+
+            let (r, g, b) = match b_pixel[3] {
+                0 => (a_pixel[0], a_pixel[1], a_pixel[2]),
+                _ => {
+                    let r = a_pixel[0] as i16 + ((b_pixel[0] as i16 - a_pixel[0] as i16) as f32 * o)
+                        as i16;
+                    let g = a_pixel[1] as i16 + ((b_pixel[1] as i16 - a_pixel[1] as i16) as f32 * o)
+                        as i16;
+                    let b = a_pixel[2] as i16 + ((b_pixel[2] as i16 - a_pixel[2] as i16) as f32 * o)
+                        as i16;
+
+                    (r as u8, g as u8, b as u8)
+                }
+            };
 
             let new_px = Rgba([r, g, b, a_pixel[3]]);
             a.put_pixel(x, y, new_px);
