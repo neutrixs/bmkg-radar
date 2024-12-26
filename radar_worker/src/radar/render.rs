@@ -85,11 +85,24 @@ impl RadarImagery {
 
         let overlapping = self.overlapping_radars(radars, &radar);
 
+        // variable calculations that does NOT use y or x will be precomputed here
+        let bounds_lon_dist = self.bounds[1].lon - self.bounds[0].lon;
+        let width_rel_bounds_lon_dist = canvas.width() as f64 / bounds_lon_dist;
+
+        let bounds_lat_dist = self.bounds[0].lat - self.bounds[1].lat;
+        let bounds_lat_dist_rel_cv_height = bounds_lat_dist / canvas.height()
+            as f64;
+
+        let cropped_im_lon_dist = cropped_image_bounds[1].lon - cropped_image_bounds[0].lon;
+        let width_rel_cropped_im_lon_dist = cropped_image.width() as f64 / cropped_im_lon_dist;
+
+        let cropped_im_lat_dist = cropped_image_bounds[0].lat - cropped_image_bounds[1].lat;
+        let height_rel_cropped_im_lat_dist = cropped_image.height() as
+            f64 / cropped_im_lat_dist;
+
+        // done precomputing, loop over the area
         for y in canvas_image_pos[0].y..canvas_image_pos[1].y {
-            let latitude = self.bounds[0].lat - (y as f64 + 0.5) / (canvas.height() as f64) * (self
-                .bounds[0].lat - self
-                .bounds[1]
-                .lat);
+            let latitude = self.bounds[0].lat - (y as f64 + 0.5) * bounds_lat_dist_rel_cv_height;
 
             let mut longitude_to_check = Vec::new();
 
@@ -141,9 +154,7 @@ impl RadarImagery {
 
             longitude_bounds.sort_by(|a, b| a.partial_cmp(b).unwrap());
 
-            let pos_y_on_radar = (cropped_image_bounds[0].lat - latitude) /
-                (cropped_image_bounds[0].lat - cropped_image_bounds[1].lat) * cropped_image
-                .height() as f64;
+            let pos_y_on_radar = (cropped_image_bounds[0].lat - latitude) * height_rel_cropped_im_lat_dist;
             let pos_y_on_radar = considerate_floor(pos_y_on_radar) as u32;
 
             // longitude_bounds will always have an even length
@@ -165,21 +176,13 @@ impl RadarImagery {
                 let lower_bound = longitude_bound.max(image_bounds[0].lon);
                 let upper_bound = longitude_bound_end.min(image_bounds[1].lon);
 
-                let lower_bound_on_canvas = (lower_bound - self.bounds[0].lon) /
-                    (self.bounds[1].lon - self.bounds[0].lon) * canvas
-                    .width() as f64;
-                let upper_bound_on_canvas = (upper_bound - self.bounds[0].lon) /
-                    (self.bounds[1].lon - self.bounds[0].lon) * canvas
-                    .width() as f64;
+                let lower_bound_on_canvas = (lower_bound - self.bounds[0].lon) * width_rel_bounds_lon_dist;
+                let upper_bound_on_canvas = (upper_bound - self.bounds[0].lon) * width_rel_bounds_lon_dist;
                 let lower_bound_on_canvas = lower_bound_on_canvas.round() as u32;
                 let upper_bound_on_canvas = upper_bound_on_canvas.round() as u32;
 
-                let lower_bound_on_radar = (lower_bound - cropped_image_bounds[0].lon) /
-                    (cropped_image_bounds[1]
-                        .lon - cropped_image_bounds[0].lon) * cropped_image.width() as f64;
-                let upper_bound_on_radar = (upper_bound - cropped_image_bounds[0].lon) /
-                    (cropped_image_bounds[1]
-                        .lon - cropped_image_bounds[0].lon) * cropped_image.width() as f64;
+                let lower_bound_on_radar = (lower_bound - cropped_image_bounds[0].lon) * width_rel_cropped_im_lon_dist;
+                let upper_bound_on_radar = (upper_bound - cropped_image_bounds[0].lon) * width_rel_cropped_im_lon_dist;
 
                 let distance_on_radar = upper_bound_on_radar - lower_bound_on_radar;
                 let distance_on_canvas = (upper_bound_on_canvas - lower_bound_on_canvas) as f64;
