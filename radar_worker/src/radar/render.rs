@@ -178,8 +178,12 @@ impl RadarImagery {
 
                 let lower_bound_on_canvas = (lower_bound - self.bounds[0].lon) * width_rel_bounds_lon_dist;
                 let upper_bound_on_canvas = (upper_bound - self.bounds[0].lon) * width_rel_bounds_lon_dist;
-                let lower_bound_on_canvas = lower_bound_on_canvas.round() as u32;
-                let upper_bound_on_canvas = upper_bound_on_canvas.round() as u32;
+                // technically these two should be rounded
+                // however the compromise is fine
+                // it'll be around 20% faster this way
+                // according to the loop
+                let lower_bound_on_canvas = lower_bound_on_canvas as u32;
+                let upper_bound_on_canvas = upper_bound_on_canvas as u32;
 
                 let lower_bound_on_radar = (lower_bound - cropped_image_bounds[0].lon) * width_rel_cropped_im_lon_dist;
                 let upper_bound_on_radar = (upper_bound - cropped_image_bounds[0].lon) * width_rel_cropped_im_lon_dist;
@@ -191,7 +195,9 @@ impl RadarImagery {
                 for x in lower_bound_on_canvas..upper_bound_on_canvas {
                     let pos_x_on_radar = (x as f64 - lower_bound_on_canvas as f64) *
                         calc + lower_bound_on_radar;
-                    let pos_x_on_radar = pos_x_on_radar.round() as u32;
+                    // technically should be rounded, but fine
+                    // note if there will be ever some bug
+                    let pos_x_on_radar = pos_x_on_radar as u32;
 
                     let pixel = cropped_image.get_pixel(pos_x_on_radar, pos_y_on_radar);
                     let pixel = pixel_to_color_scheme(pixel, &radar.data);
