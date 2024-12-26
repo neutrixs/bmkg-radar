@@ -25,7 +25,7 @@ pub(crate) struct RadarImagesData {
 }
 
 #[derive(Clone, Debug)]
-pub(crate) struct RadarData {
+pub struct RadarData {
     bounds: [Coordinate; 2],
     city: String,
     station: String,
