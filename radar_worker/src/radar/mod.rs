@@ -96,7 +96,7 @@ impl RadarImageryBuilder {
 
     pub fn build(self) -> RadarImagery {
         let mut ranges: HashMap<String, Distance> = HashMap::new();
-        ranges.insert("PWK".to_string(), Distance::KM(80.));
+        ranges.insert("PWK".to_string(), Distance::KM(120.));
         ranges.insert("CGK".to_string(), Distance::KM(85.));
         ranges.insert("JAK".to_string(), Distance::KM(240.));
 
