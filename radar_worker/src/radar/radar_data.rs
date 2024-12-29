@@ -126,7 +126,14 @@ impl RadarImagery {
             .append_pair("radar", &radar.code)
             .append_pair("token", &token.unwrap_or("".to_string()));
 
-        let response = reqwest::get(url).await?.text().await?;
+        // well well well
+        // who's got an invalid cert here??
+        // anyway I have to do the same in cURL too so... yeah...
+        let client = reqwest::Client::builder()
+            .danger_accept_invalid_certs(true)
+            .build()?;
+
+        let response = client.get(url).send().await?.text().await?;
         let response: RawAPIDetailedData = serde_json::from_str(&response)?;
         let recent = response.last_one_hour;
         let legends = parse_legend(response.legends);
@@ -164,7 +171,14 @@ impl RadarImagery {
 
     pub(crate) async fn get_radar_data(&self) -> Result<Vec<RadarData>, Box<dyn Error>> {
         let mut container: Vec<RadarData> = Vec::new();
-        let response = reqwest::get(RADAR_LIST_API_URL).await?.text().await?;
+        // well well well
+        // who's got an invalid cert here??
+        // anyway I have to do the same in cURL too so... yeah...
+        let client = reqwest::Client::builder()
+            .danger_accept_invalid_certs(true)
+            .build()?;
+
+        let response = client.get(RADAR_LIST_API_URL).send().await?.text().await?;
         let response: RawAPIRadarlist = serde_json::from_str(&response)?;
 
         for radar in response.data {
