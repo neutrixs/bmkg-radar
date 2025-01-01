@@ -1,0 +1,15 @@
+[package]
+name = "discord"
+version = "0.1.0"
+edition = "2021"
+
+[[bin]]
+name = "discord"
+path = "src/main.rs"
+
+[dependencies]
+image = "0.25.5"
+poise = "0.6.1"
+radar_worker = { path = "../radar_worker" }
+serenity = "0.12.4"
+tokio = "1.42.0"
