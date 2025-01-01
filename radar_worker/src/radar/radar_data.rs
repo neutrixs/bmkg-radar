@@ -2,7 +2,7 @@ use crate::common::{Coordinate, Distance};
 use crate::radar::color_scheme::hex_to_rgb;
 use crate::radar::{RadarData, RadarImagesData, DEFAULT_RANGE};
 use crate::radar::{RadarImagery, DEFAULT_PRIORITY};
-use crate::util::gen_connection_err;
+use crate::util::{auto_proxy, gen_connection_err};
 use chrono::{NaiveDateTime, TimeZone, Utc};
 use image::Rgba;
 use serde::Deserialize;
@@ -136,7 +136,7 @@ impl RadarImagery {
             .timeout(Duration::from_secs(10))
             .build()?;
 
-        let response = client.get(url).send().await?.text().await?;
+        let response = auto_proxy(client, &url.to_string())?.send().await?.text().await?;
         let response: RawAPIDetailedData = serde_json::from_str(&response)?;
         let recent = response.last_one_hour;
         let legends = parse_legend(response.legends);
@@ -182,7 +182,7 @@ impl RadarImagery {
             .timeout(Duration::from_secs(10))
             .build()?;
 
-        let response = client.get(RADAR_LIST_API_URL).send().await;
+        let response = auto_proxy(client, RADAR_LIST_API_URL)?.send().await;
         if let Err(e) = response {
             return Err(gen_connection_err(e));
         }

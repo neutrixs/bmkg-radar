@@ -1,5 +1,5 @@
 use crate::radar::{Image, RadarData};
-use crate::util::gen_connection_err;
+use crate::util::{auto_proxy, gen_connection_err};
 use futures::future;
 use std::error::Error;
 use std::time::Duration;
@@ -22,7 +22,7 @@ pub(crate) async fn fetch_images(radars: Vec<RadarData>) -> Result<Vec<Image>, B
             .timeout(Duration::from_secs(10))
             .build()?;
 
-        let request = client.get(latest_image_url).send();
+        let request = auto_proxy(client, &latest_image_url)?.send();
         async_requests.push(request);
         radars_to_be_used.push(radar);
     }
