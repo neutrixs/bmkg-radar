@@ -1,7 +1,9 @@
 use crate::common::Coordinate;
 use crate::map::fake_headers::_fake_headers;
+use crate::util::gen_connection_err;
 use serde::Deserialize;
 use std::error::Error;
+use std::time::Duration;
 use url::form_urlencoded::Serializer;
 
 const NOMINATIM_SEARCH_BASE_URL: &str = "https://nominatim.openstreetmap.org/search";
@@ -87,13 +89,17 @@ pub(crate) async fn search(place: &String) -> Result<Vec<APIResult>, Box<dyn Err
     let fake_headers = _fake_headers();
 
     let url = format!("{}?{}", NOMINATIM_SEARCH_BASE_URL, escaped);
-    let response = reqwest::Client::new()
+    let response = reqwest::Client::builder()
+        .timeout(Duration::from_secs(10))
+        .build()?
         .get(&url)
         .headers(fake_headers)
         .send()
-        .await?
-        .text()
-        .await?;
+        .await;
+    if let Err(e) = response {
+        return Err(gen_connection_err(e));
+    }
+    let response = response.unwrap().text().await?;
     let api_data: Vec<APISearchResult> = serde_json::from_str(&response)?;
     let mut result: Vec<APIResult> = vec![];
 

@@ -1,6 +1,8 @@
 use crate::radar::{Image, RadarData};
+use crate::util::gen_connection_err;
 use futures::future;
 use std::error::Error;
+use std::time::Duration;
 
 pub(crate) async fn fetch_images(radars: Vec<RadarData>) -> Result<Vec<Image>, Box<dyn Error + Send + Sync>> {
     let mut radars_to_be_used = Vec::new();
@@ -16,7 +18,11 @@ pub(crate) async fn fetch_images(radars: Vec<RadarData>) -> Result<Vec<Image>, B
         }
         let latest_image_url = latest_image_url.unwrap().url.clone();
 
-        let request = reqwest::get(latest_image_url);
+        let client = reqwest::Client::builder()
+            .timeout(Duration::from_secs(10))
+            .build()?;
+
+        let request = client.get(latest_image_url).send();
         async_requests.push(request);
         radars_to_be_used.push(radar);
     }
@@ -27,8 +33,11 @@ pub(crate) async fn fetch_images(radars: Vec<RadarData>) -> Result<Vec<Image>, B
 
     while let (Some(data), Some(response)) = (radars_iter.next(), images_iter.next()) {
         if let Err(e) = response {
-            return Err(format!("Error while fetching radar image {}: {}", data.code, e).into());
+            return Err(gen_connection_err(e));
         }
+        // if let Err(e) = response {
+        //     return Err(format!("Error while fetching radar image {}: {}", data.code, e).into());
+        // }
         let response = response.unwrap();
         let bytes = response.bytes().await;
         if let Err(e) = bytes {

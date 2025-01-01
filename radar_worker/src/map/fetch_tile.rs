@@ -1,4 +1,5 @@
 use crate::map::{fake_headers::_fake_headers, MapImagery};
+use crate::util::gen_connection_err;
 use bytes::Bytes;
 use image::{DynamicImage, ImageReader};
 use std::error::Error;
@@ -7,6 +8,7 @@ use std::fs::File;
 use std::hash::{DefaultHasher, Hash, Hasher};
 use std::io::copy;
 use std::path::PathBuf;
+use std::time::Duration;
 use url::Url;
 
 #[derive(Hash)]
@@ -52,8 +54,17 @@ impl MapImagery {
                 .decode()?;
             return Ok(img);
         }
-        let client = reqwest::Client::new();
-        let response = client.get(&url).headers(_fake_headers()).send().await?;
+        let client = reqwest::Client::builder()
+            .timeout(Duration::from_secs(10))
+            .build()?;
+        let response = client.get(&url).headers(_fake_headers()).send().await;
+        if let Err(e) = response {
+            return Err(gen_connection_err(e))
+        }
+
+        let response = response.unwrap();
+        // TODO: do if not success for every request
+        // like this
         if !response.status().is_success() {
             return Err(format!(
                 "Failed to fetch tile, {} {}: {}",

@@ -2,11 +2,13 @@ use crate::common::{Coordinate, Distance};
 use crate::radar::color_scheme::hex_to_rgb;
 use crate::radar::{RadarData, RadarImagesData, DEFAULT_RANGE};
 use crate::radar::{RadarImagery, DEFAULT_PRIORITY};
+use crate::util::gen_connection_err;
 use chrono::{NaiveDateTime, TimeZone, Utc};
 use image::Rgba;
 use serde::Deserialize;
 use std::env;
 use std::error::Error;
+use std::time::Duration;
 use url::Url;
 
 const RADAR_LIST_API_URL: &str = "https://radar.bmkg.go.id:8090/radarlist";
@@ -131,6 +133,7 @@ impl RadarImagery {
         // anyway I have to do the same in cURL too so... yeah...
         let client = reqwest::Client::builder()
             .danger_accept_invalid_certs(true)
+            .timeout(Duration::from_secs(10))
             .build()?;
 
         let response = client.get(url).send().await?.text().await?;
@@ -176,9 +179,15 @@ impl RadarImagery {
         // anyway I have to do the same in cURL too so... yeah...
         let client = reqwest::Client::builder()
             .danger_accept_invalid_certs(true)
+            .timeout(Duration::from_secs(10))
             .build()?;
 
-        let response = client.get(RADAR_LIST_API_URL).send().await?.text().await?;
+        let response = client.get(RADAR_LIST_API_URL).send().await;
+        if let Err(e) = response {
+            return Err(gen_connection_err(e));
+        }
+
+        let response = response.unwrap().text().await?;
         let response: RawAPIRadarlist = serde_json::from_str(&response)?;
 
         for radar in response.data {

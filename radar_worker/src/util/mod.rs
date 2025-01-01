@@ -1,4 +1,25 @@
 use image::{Rgba, RgbaImage};
+use std::error::Error;
+use url::Url;
+
+pub fn get_domain(url: &str) -> String {
+    match Url::parse(url) {
+        Ok(url_obj) => match url_obj.domain() {
+            Some(domain) => domain.to_string(),
+            None => "[unknown domain]".to_string(),
+        },
+        Err(_) => "[invalid URL]".to_string(),
+    }
+}
+
+pub fn gen_connection_err(e: reqwest::Error) -> Box<dyn Error + Send + Sync> {
+    let url = match e.url() {
+        Some(url) => url.to_string(),
+        None => "".to_string(),
+    };
+    let domain = get_domain(&url);
+    format!("Failed to connect to {}: {}", domain, e.to_string()).into()
+}
 
 pub fn overlay_image(a: RgbaImage, b: RgbaImage, opacity: f32) -> RgbaImage {
     assert!((0.0..=1.0).contains(&opacity));
