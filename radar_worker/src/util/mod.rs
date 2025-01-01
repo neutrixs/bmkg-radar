@@ -1,6 +1,10 @@
+mod proxy;
+
 use image::{Rgba, RgbaImage};
 use std::error::Error;
 use url::Url;
+
+pub use proxy::auto_proxy;
 
 pub fn get_domain(url: &str) -> String {
     match Url::parse(url) {
