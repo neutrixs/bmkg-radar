@@ -112,7 +112,7 @@ impl RadarImagery {
 
     async fn get_radar_images_data(radar: &RawAPIRadar) -> Result<(Vec<RadarImagesData>, Legends),
         Box<dyn
-    Error>> {
+        Error + Send + Sync>> {
         let token = env::var("BMKG_APIKEY");
         let base_url: String;
         if let Ok(_) = token {
@@ -169,7 +169,7 @@ impl RadarImagery {
         Ok((images, legends))
     }
 
-    pub(crate) async fn get_radar_data(&self) -> Result<Vec<RadarData>, Box<dyn Error>> {
+    pub(crate) async fn get_radar_data(&self) -> Result<Vec<RadarData>, Box<dyn Error + Send + Sync>> {
         let mut container: Vec<RadarData> = Vec::new();
         // well well well
         // who's got an invalid cert here??

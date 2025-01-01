@@ -24,20 +24,20 @@ fn _hash_tile_url(url: &String) -> String {
     format!("{:x}", hash)
 }
 
-fn _save_file(content: &Bytes, path: &PathBuf) -> Result<(), Box<dyn Error>> {
+fn _save_file(content: &Bytes, path: &PathBuf) -> Result<(), Box<dyn Error + Send + Sync>> {
     let mut content = content.as_ref();
     let mut file = File::create(path)?;
     copy(&mut content, &mut file)?;
     Ok(())
 }
 
-fn _load_file(path: &PathBuf) -> Result<Bytes, Box<dyn Error>> {
+fn _load_file(path: &PathBuf) -> Result<Bytes, Box<dyn Error + Send + Sync>> {
     let file = fs::read(path)?;
     Ok(Bytes::from(file))
 }
 
 impl MapImagery {
-    pub(crate) async fn fetch_tile(&self, x: i32, y: i32) -> Result<DynamicImage, Box<dyn Error>> {
+    pub(crate) async fn fetch_tile(&self, x: i32, y: i32) -> Result<DynamicImage, Box<dyn Error + Send + Sync>> {
         let url = self.style.url(x, y, self.zoom_level);
         let hash = _hash_tile_url(&url);
         let filename = format!("tile-{}", hash);

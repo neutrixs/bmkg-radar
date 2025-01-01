@@ -128,7 +128,7 @@ impl MapImagery {
     async fn prepare_images(
         &self,
         meta: &CanvasMetadata,
-    ) -> Result<Vec<DynamicImage>, Box<dyn Error>> {
+    ) -> Result<Vec<DynamicImage>, Box<dyn Error + Send + Sync>> {
         let rows = meta.rows();
         let cols = meta.cols();
 
@@ -151,7 +151,7 @@ impl MapImagery {
         Ok(tiles_images)
     }
 
-    pub async fn render(&self) -> Result<ImageBuffer<Rgba<u8>, Vec<u8>>, Box<dyn Error>> {
+    pub async fn render(&self) -> Result<ImageBuffer<Rgba<u8>, Vec<u8>>, Box<dyn Error + Send + Sync>> {
         let meta = CanvasMetadata::new(self.bounds, self.zoom_level);
         let tiles_images = self.prepare_images(&meta).await?;
 

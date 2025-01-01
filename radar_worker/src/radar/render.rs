@@ -13,7 +13,7 @@ struct RenderLoopResult {
 }
 
 impl RadarImagery {
-    pub async fn render(&self, width: u32, height: u32) -> Result<RenderResult, Box<dyn Error>> {
+    pub async fn render(&self, width: u32, height: u32) -> Result<RenderResult, Box<dyn Error + Send + Sync>> {
         let radars = self.get_radar_data().await;
         if let Err(e) = radars {
             return Err(format!("Failed to fetch radar datas: {}", e).into());
@@ -50,7 +50,7 @@ impl RadarImagery {
         canvas: &mut RgbaImage,
         radars: &Vec<Image>,
         radar: &Image,
-    ) -> Result<RenderLoopResult, Box<dyn Error>> {
+    ) -> Result<RenderLoopResult, Box<dyn Error + Send + Sync>> {
         let mut is_used = false;
 
         let decoder = PngDecoder::new(Cursor::new(&radar.image));

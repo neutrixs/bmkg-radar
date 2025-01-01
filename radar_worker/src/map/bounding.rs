@@ -28,7 +28,7 @@ struct APISearchResult {
 }
 
 impl APISearchResult {
-    fn into_api_result(self) -> Result<APIResult, Box<dyn Error>> {
+    fn into_api_result(self) -> Result<APIResult, Box<dyn Error + Send + Sync>> {
         let lat = self.lat.parse::<f64>()?;
         let lon = self.lon.parse::<f64>()?;
 
@@ -79,7 +79,7 @@ pub(crate) struct APIResult {
     pub bounding_box: [Coordinate; 2],
 }
 
-pub(crate) async fn search(place: &String) -> Result<Vec<APIResult>, Box<dyn Error>> {
+pub(crate) async fn search(place: &String) -> Result<Vec<APIResult>, Box<dyn Error + Send + Sync>> {
     let escaped = Serializer::new(String::new())
         .append_pair("q", place.as_str())
         .append_pair("format", "json")
@@ -104,7 +104,7 @@ pub(crate) async fn search(place: &String) -> Result<Vec<APIResult>, Box<dyn Err
     Ok(result)
 }
 
-pub async fn bounding_box(place: String) -> Result<[Coordinate; 2], Box<dyn Error>> {
+pub async fn bounding_box(place: String) -> Result<[Coordinate; 2], Box<dyn Error + Send + Sync>> {
     let result = search(&place).await?;
 
     if result.len() == 0 {
