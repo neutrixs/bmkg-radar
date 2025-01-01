@@ -48,9 +48,9 @@ pub(crate) struct APILegends {
 }
 
 #[derive(Debug, Clone)]
-pub(crate) struct Legends {
-    pub(crate) levels: Vec<i32>,
-    pub(crate) colors: Vec<Rgba<u8>>,
+pub struct Legends {
+    pub levels: Vec<i32>,
+    pub colors: Vec<Rgba<u8>>,
 }
 
 #[derive(Deserialize, Debug)]
