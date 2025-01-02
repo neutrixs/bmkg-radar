@@ -13,7 +13,6 @@ const DEFAULT_MAX_TILES: i32 = 50;
 
 #[derive(Copy, Clone, Debug)]
 pub enum MapStyle {
-    OpenStreetMap,
     OpenCycleMap,
     Transport,
     Landscape,
@@ -29,7 +28,6 @@ pub enum MapStyle {
 impl MapStyle {
     pub(crate) fn url(&self, x: i32, y: i32, z: i32) -> String {
         let base: &str = match self {
-            Self::OpenStreetMap => "https://tile.openstreetmap.org",
             Self::OpenCycleMap => "https://tile.thunderforest.com/cycle",
             Self::Transport => "https://tile.thunderforest.com/transport",
             Self::Landscape => "https://tile.thunderforest.com/landscape",
@@ -45,12 +43,10 @@ impl MapStyle {
         let mut url = Url::parse(&format!("{}/{}/{}/{}.png", base, z, x, y))
             .expect("Error parsing URL");
 
-        if let Self::OpenStreetMap = self {} else {
-            url.query_pairs_mut().append_pair(
-                "apikey",
-                &env::var("THUNDERFOREST_APIKEY").unwrap_or("".to_string()),
-            );
-        }
+        url.query_pairs_mut().append_pair(
+            "apikey",
+            &env::var("THUNDERFOREST_APIKEY").unwrap_or("".to_string()),
+        );
 
         url.to_string()
     }
@@ -121,7 +117,7 @@ impl MapImageryBuilder {
         MapImagery {
             bounds: self.bounds,
             zoom_level,
-            style: self.style.unwrap_or_else(|| MapStyle::OpenStreetMap)
+            style: self.style.unwrap_or_else(|| MapStyle::Transport),
         }
     }
 }
