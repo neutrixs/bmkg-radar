@@ -22,7 +22,7 @@ pub fn gen_connection_err(e: reqwest::Error) -> Box<dyn Error + Send + Sync> {
         None => "".to_string(),
     };
     let domain = get_domain(&url);
-    format!("Failed to connect to {}: {}", domain, e.to_string()).into()
+    format!("Failed to connect to {}.", domain).into()
 }
 
 pub fn overlay_image(a: RgbaImage, b: RgbaImage, opacity: f32) -> RgbaImage {
