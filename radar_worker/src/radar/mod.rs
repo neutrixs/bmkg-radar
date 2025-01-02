@@ -12,6 +12,7 @@ use bytes::Bytes;
 use chrono::{DateTime, Utc};
 use image::RgbaImage;
 use std::collections::HashMap;
+use std::time::Duration as StdDuration;
 use time::Duration;
 
 const DEFAULT_THRESHOLD: Duration = Duration::minutes(20);
@@ -49,6 +50,7 @@ pub struct RadarImagery {
     omit_radar: Vec<String>,
     ranges: HashMap<String, Distance>,
     priorities: HashMap<String, i32>,
+    timeout_duration: StdDuration,
 }
 
 pub struct RadarImageryBuilder {
@@ -56,6 +58,7 @@ pub struct RadarImageryBuilder {
     age_threshold: Option<Duration>,
     enforce_age_threshold: Option<bool>,
     omit_radar: Option<Vec<String>>,
+    timeout_duration: Option<StdDuration>,
 }
 
 pub struct RenderResult {
@@ -76,6 +79,7 @@ impl RadarImageryBuilder {
             age_threshold: None,
             enforce_age_threshold: None,
             omit_radar: None,
+            timeout_duration: None,
         }
     }
 
@@ -91,6 +95,11 @@ impl RadarImageryBuilder {
 
     pub fn omit_radar(mut self, omit_radar: Vec<String>) -> Self {
         self.omit_radar = Some(omit_radar);
+        self
+    }
+
+    pub fn timeout_duration(mut self, timeout: StdDuration) -> Self {
+        self.timeout_duration = Some(timeout);
         self
     }
 
@@ -115,6 +124,7 @@ impl RadarImageryBuilder {
             age_threshold: self.age_threshold.unwrap_or(DEFAULT_THRESHOLD),
             enforce_age_threshold: self.enforce_age_threshold.unwrap_or_default(),
             omit_radar: self.omit_radar.unwrap_or_default(),
+            timeout_duration: self.timeout_duration.unwrap_or_else(|| StdDuration::from_secs(10)),
             ranges,
             priorities,
         }

@@ -9,7 +9,6 @@ use std::fs::File;
 use std::hash::{DefaultHasher, Hash, Hasher};
 use std::io::copy;
 use std::path::PathBuf;
-use std::time::Duration;
 use url::Url;
 
 #[derive(Hash)]
@@ -59,7 +58,7 @@ impl MapImagery {
             return Ok(img);
         }
         let client = reqwest::Client::builder()
-            .timeout(Duration::from_secs(10))
+            .timeout(self.timeout_duration)
             .build()?;
         let response = auto_proxy(client, &url)?.send().await;
         if let Err(e) = response {

@@ -8,7 +8,6 @@ use image::Rgba;
 use serde::Deserialize;
 use std::env;
 use std::error::Error;
-use std::time::Duration;
 use url::Url;
 
 const RADAR_LIST_API_URL: &str = "https://radar.bmkg.go.id:8090/radarlist";
@@ -112,7 +111,8 @@ impl RadarImagery {
         lat_overlap && lon_overlap
     }
 
-    async fn get_radar_images_data(radar: &RawAPIRadar) -> Result<(Vec<RadarImagesData>, Legends),
+    async fn get_radar_images_data(&self, radar: &RawAPIRadar) -> Result<(Vec<RadarImagesData>,
+                                                                          Legends),
         Box<dyn
         Error + Send + Sync>> {
         let token = env::var("BMKG_APIKEY");
@@ -133,7 +133,7 @@ impl RadarImagery {
         // anyway I have to do the same in cURL too so... yeah...
         let client = reqwest::Client::builder()
             .danger_accept_invalid_certs(true)
-            .timeout(Duration::from_secs(10))
+            .timeout(self.timeout_duration)
             .build()?;
 
         let response = auto_proxy(client, &url.to_string())?.send().await?.text().await?;
@@ -179,7 +179,7 @@ impl RadarImagery {
         // anyway I have to do the same in cURL too so... yeah...
         let client = reqwest::Client::builder()
             .danger_accept_invalid_certs(true)
-            .timeout(Duration::from_secs(10))
+            .timeout(self.timeout_duration)
             .build()?;
 
         let response = auto_proxy(client, RADAR_LIST_API_URL)?.send().await;
@@ -223,7 +223,7 @@ impl RadarImagery {
                 continue;
             }
 
-            let (images, legends) = Self::get_radar_images_data(&radar).await?;
+            let (images, legends) = self.get_radar_images_data(&radar).await?;
 
             if images.len() == 0 {
                 continue;

@@ -3,6 +3,7 @@ use radar_worker::map::bounding::bounding_box;
 use radar_worker::map::{MapImagery, MapStyle};
 use radar_worker::radar::RadarImagery;
 use radar_worker::util::overlay_image;
+use std::time::Duration;
 use tokio::runtime::Runtime;
 
 #[derive(Parser, Debug)]
@@ -30,7 +31,7 @@ fn main() {
     let args = Args::parse();
 
     let _ = Runtime::new().unwrap().block_on(async {
-        let bounds = bounding_box(args.place).await;
+        let bounds = bounding_box(args.place, Duration::from_secs(10)).await;
         if let Err(e) = bounds {
             panic!("{}", e);
         }

@@ -7,6 +7,7 @@ mod util;
 use crate::common::Coordinate;
 use crate::map::util::_coord_to_tile_no_pow;
 use std::env;
+use std::time::Duration;
 use url::Url;
 
 const DEFAULT_MAX_TILES: i32 = 50;
@@ -61,6 +62,7 @@ pub struct MapImagery {
     bounds: [Coordinate; 2],
     zoom_level: i32,
     style: MapStyle,
+    timeout_duration: Duration,
 }
 
 impl MapImagery {
@@ -73,6 +75,7 @@ pub struct MapImageryBuilder {
     bounds: [Coordinate; 2],
     zoom_setting: Option<ZoomSetting>,
     style: Option<MapStyle>,
+    timeout_duration: Option<Duration>,
 }
 
 impl MapImageryBuilder {
@@ -81,6 +84,7 @@ impl MapImageryBuilder {
             bounds,
             zoom_setting: None,
             style: None,
+            timeout_duration: None,
         }
     }
 
@@ -107,6 +111,11 @@ impl MapImageryBuilder {
         self
     }
 
+    pub fn timeout_duration(mut self, timeout: Duration) -> Self {
+        self.timeout_duration = Some(timeout);
+        self
+    }
+
     pub fn build(&self) -> MapImagery {
         let zoom_level = match self.zoom_setting {
             Some(ZoomSetting::ZoomLevel(zl)) => zl,
@@ -118,6 +127,7 @@ impl MapImageryBuilder {
             bounds: self.bounds,
             zoom_level,
             style: self.style.unwrap_or_else(|| MapStyle::Transport),
+            timeout_duration: self.timeout_duration.unwrap_or_else(|| Duration::from_secs(10)),
         }
     }
 }

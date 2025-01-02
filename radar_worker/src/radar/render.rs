@@ -1,7 +1,6 @@
 use crate::common::PixelPosition;
 use crate::radar::color_scheme::pixel_to_color_scheme;
 use crate::radar::formula::{considerate_floor, min_q1_q2, q_inside, qx_circ, qx_half_dist, EqResult};
-use crate::radar::images_fetch::fetch_images;
 use crate::radar::{Image, RadarData, RadarImagery, RenderResult};
 use image::codecs::png::PngDecoder;
 use image::{DynamicImage, GenericImageView, ImageBuffer, RgbaImage};
@@ -18,7 +17,7 @@ impl RadarImagery {
         if let Err(e) = radars {
             return Err(format!("Failed to fetch radar datas: {}", e).into());
         }
-        let radars = fetch_images(radars?).await;
+        let radars = self.fetch_images(radars?).await;
         if let Err(e) = radars {
             return Err(format!("Error while fetching radar images: {}", e).into());
         }

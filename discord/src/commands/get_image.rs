@@ -4,6 +4,7 @@ use radar_worker::map::{bounding, MapImagery, MapStyle};
 use radar_worker::radar::{RadarData, RadarImagery};
 use radar_worker::util::overlay_image;
 use serenity::all::CreateAttachment;
+use std::time::Duration;
 
 fn format_description(radars: Vec<RadarData>) -> String {
     if radars.len() == 0 {
@@ -45,7 +46,7 @@ pub async fn get_image(
 ) -> Result<(), Error> {
     ctx.defer().await?;
 
-    let bounding_box = bounding::bounding_box(place).await;
+    let bounding_box = bounding::bounding_box(place, Duration::from_secs(10)).await;
     if let Err(e) = bounding_box {
         let message = format!("Error: {}", e.to_string());
         let _ = ctx.say(message).await;
@@ -58,7 +59,10 @@ pub async fn get_image(
         _ => MapStyle::Transport,
     };
 
-    let imagery = MapImagery::builder(bounding_box).map_style(style).build();
+    let imagery = MapImagery::builder(bounding_box)
+        .map_style(style)
+        .timeout_duration(Duration::from_secs(20))
+        .build();
     let imagery_render_result = imagery.render().await;
     if let Err(e) = imagery_render_result {
         let message = format!("Error: {}", e.to_string());
@@ -71,6 +75,7 @@ pub async fn get_image(
 
     let radar = RadarImagery::builder(bounding_box)
         .enforce_age_threshold(true)
+        .timeout_duration(Duration::from_secs(20))
         .build();
 
     let radar_render_result = radar.render(width, height).await;
@@ -87,10 +92,13 @@ pub async fn get_image(
 
     let attachment = CreateAttachment::bytes(overlayed, "radar.png");
 
-    let _ = ctx.send(CreateReply::default()
-        .content(format_description(radar_render_result.used_radars))
-        .attachment(attachment)
-    ).await;
+    let _ = ctx
+        .send(
+            CreateReply::default()
+                .content(format_description(radar_render_result.used_radars))
+                .attachment(attachment),
+        )
+        .await;
 
     Ok(())
 }

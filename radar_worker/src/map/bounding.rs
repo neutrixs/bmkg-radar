@@ -1,5 +1,6 @@
 use crate::common::Coordinate;
 use crate::map::fake_headers::_fake_headers;
+use crate::map::MapImagery;
 use crate::util::gen_connection_err;
 use serde::Deserialize;
 use std::error::Error;
@@ -81,7 +82,10 @@ pub(crate) struct APIResult {
     pub bounding_box: [Coordinate; 2],
 }
 
-pub(crate) async fn search(place: &String) -> Result<Vec<APIResult>, Box<dyn Error + Send + Sync>> {
+impl MapImagery {}
+
+pub(crate) async fn search(place: &String, timeout_duration: Duration) -> Result<Vec<APIResult>,
+    Box<dyn Error + Send + Sync>> {
     let escaped = Serializer::new(String::new())
         .append_pair("q", place.as_str())
         .append_pair("format", "json")
@@ -90,7 +94,7 @@ pub(crate) async fn search(place: &String) -> Result<Vec<APIResult>, Box<dyn Err
 
     let url = format!("{}?{}", NOMINATIM_SEARCH_BASE_URL, escaped);
     let response = reqwest::Client::builder()
-        .timeout(Duration::from_secs(10))
+        .timeout(timeout_duration)
         .build()?
         .get(&url)
         .headers(fake_headers)
@@ -110,8 +114,10 @@ pub(crate) async fn search(place: &String) -> Result<Vec<APIResult>, Box<dyn Err
     Ok(result)
 }
 
-pub async fn bounding_box(place: String) -> Result<[Coordinate; 2], Box<dyn Error + Send + Sync>> {
-    let result = search(&place).await?;
+pub async fn bounding_box(place: String, timeout_duration: Duration) -> Result<[Coordinate; 2],
+    Box<dyn
+    Error + Send + Sync>> {
+    let result = search(&place, timeout_duration).await?;
 
     if result.len() == 0 {
         let message = format!("No such location {}", &place);
@@ -127,7 +133,7 @@ mod tests {
     use tokio;
     #[tokio::test]
     async fn test_bounding_box() {
-        let bound = bounding_box(String::from("Bandung")).await;
+        let bound = bounding_box(String::from("Bandung"), Duration::from_secs(10)).await;
         let bound = bound.unwrap();
         // checks for mix up between the first and the second bound
         assert!(bound[0].lat > bound[1].lat);
