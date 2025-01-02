@@ -2,6 +2,7 @@ use crate::map::{fake_headers::_fake_headers, MapImagery};
 use crate::util::gen_connection_err;
 use bytes::Bytes;
 use image::{DynamicImage, ImageReader};
+use std::env;
 use std::error::Error;
 use std::fs;
 use std::fs::File;
@@ -44,9 +45,12 @@ impl MapImagery {
         let hash = _hash_tile_url(&url);
         let filename = format!("tile-{}", hash);
 
-        let temp_dir = std::env::temp_dir();
-        let full_path = temp_dir.join(&filename);
+        let cache_dir = env::current_dir()?.join(".cache");
+        if !cache_dir.exists() {
+            fs::create_dir(&cache_dir)?;
+        }
 
+        let full_path = cache_dir.join(&filename);
         if full_path.exists() {
             let file = _load_file(&full_path)?;
             let img = ImageReader::new(std::io::Cursor::new(file))
