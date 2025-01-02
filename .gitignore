@@ -1,6 +1,7 @@
 /target
 .env
 .idea
+.cache
 
 # Added by cargo
 #
