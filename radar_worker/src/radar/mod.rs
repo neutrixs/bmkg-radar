@@ -97,12 +97,18 @@ impl RadarImageryBuilder {
     pub fn build(self) -> RadarImagery {
         let mut ranges: HashMap<String, Distance> = HashMap::new();
         ranges.insert("PWK".to_string(), Distance::KM(120.));
+        ranges.insert("NGW".to_string(), Distance::KM(120.));
         ranges.insert("CGK".to_string(), Distance::KM(85.));
         ranges.insert("JAK".to_string(), Distance::KM(240.));
+        // only reliable up to 160KM
+        ranges.insert("IWJ".to_string(), Distance::KM(160.));
 
         let mut priorities: HashMap<String, i32> = HashMap::new();
         priorities.insert("PWK".to_string(), 1);
+        priorities.insert("NGW".to_string(), 1);
         priorities.insert("CGK".to_string(), 1);
+        // not that accurate
+        priorities.insert("IWJ".to_string(), 0);
 
         RadarImagery {
             bounds: self.bounds,
