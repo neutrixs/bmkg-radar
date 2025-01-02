@@ -46,7 +46,7 @@ fn main() {
         let width = map_image.width();
         let height = map_image.height();
 
-        let im = RadarImagery::builder(bounds).build();
+        let im = RadarImagery::builder(bounds).enforce_age_threshold(true).build();
         let radar_render = im.render(width, height).await;
         if let Err(e) = radar_render {
             panic!("{}", e);

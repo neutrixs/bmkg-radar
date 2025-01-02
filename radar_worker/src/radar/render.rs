@@ -2,6 +2,7 @@ use crate::common::PixelPosition;
 use crate::radar::color_scheme::pixel_to_color_scheme;
 use crate::radar::formula::{considerate_floor, min_q1_q2, q_inside, qx_circ, qx_half_dist, EqResult};
 use crate::radar::{Image, RadarData, RadarImagery, RenderResult};
+use chrono::Utc;
 use image::codecs::png::PngDecoder;
 use image::{DynamicImage, GenericImageView, ImageBuffer, RgbaImage};
 use std::error::Error;
@@ -80,8 +81,6 @@ impl RadarImagery {
             }
         ];
 
-        //TODO: striped pattern
-
         let overlapping = self.overlapping_radars(radars, &radar);
 
         // variable calculations that does NOT use y or x will be precomputed here
@@ -98,6 +97,16 @@ impl RadarImagery {
         let cropped_im_lat_dist = cropped_image_bounds[0].lat - cropped_image_bounds[1].lat;
         let height_rel_cropped_im_lat_dist = cropped_image.height() as
             f64 / cropped_im_lat_dist;
+
+        // striped pattern if it's an old image
+        let striped: bool;
+        if self.enforce_age_threshold {
+            let elapsed = Utc::now() - radar.data.images.last().unwrap().time;
+            let elapsed = time::Duration::seconds(elapsed.num_seconds());
+            striped = elapsed > self.age_threshold;
+        } else {
+            striped = false;
+        }
 
         // done precomputing, loop over the area
         for y in canvas_image_pos[0].y..canvas_image_pos[1].y {
@@ -192,6 +201,12 @@ impl RadarImagery {
                 let calc = distance_on_radar / distance_on_canvas;
 
                 for x in lower_bound_on_canvas..upper_bound_on_canvas {
+                    // diagonal striped pattern
+                    // it means fill in 2 pixels for every 6px of empty spots
+                    if striped && (x + y) % 8 > 2 {
+                        continue;
+                    }
+
                     let pos_x_on_radar = (x as f64 - lower_bound_on_canvas as f64) *
                         calc + lower_bound_on_radar;
                     // technically should be rounded, but fine
