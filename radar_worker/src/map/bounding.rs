@@ -12,28 +12,28 @@ const NOMINATIM_SEARCH_BASE_URL: &str = "https://nominatim.openstreetmap.org/sea
 //noinspection SpellCheckingInspection
 #[derive(Deserialize, Debug)]
 struct APISearchResult {
-    pub place_id: u64,
-    pub osm_type: String,
-    pub osm_id: u64,
-    pub lat: String,
-    pub lon: String,
-    pub class: String,
-    #[serde(rename = "type")]
-    pub typ: String,
-    pub place_rank: i32,
-    pub importance: f32,
-    #[serde(rename = "addresstype")]
-    pub address_type: String,
-    pub name: String,
-    pub display_name: String,
+    // pub place_id: u64,
+    // pub osm_type: String,
+    // pub osm_id: u64,
+    // pub lat: String,
+    // pub lon: String,
+    // pub class: String,
+    // #[serde(rename = "type")]
+    // pub typ: String,
+    // pub place_rank: i32,
+    // pub importance: f32,
+    // #[serde(rename = "addresstype")]
+    // pub address_type: String,
+    // pub name: String,
+    // pub display_name: String,
     #[serde(rename = "boundingbox")]
     pub bounding_box: [String; 4],
 }
 
 impl APISearchResult {
     fn into_api_result(self) -> Result<APIResult, Box<dyn Error + Send + Sync>> {
-        let lat = self.lat.parse::<f64>()?;
-        let lon = self.lon.parse::<f64>()?;
+        // let lat = self.lat.parse::<f64>()?;
+        // let lon = self.lon.parse::<f64>()?;
 
         let bounding0_lat = self.bounding_box[1].parse::<f64>()?;
         let bounding0_lon = self.bounding_box[2].parse::<f64>()?;
@@ -41,17 +41,17 @@ impl APISearchResult {
         let bounding1_lon = self.bounding_box[3].parse::<f64>()?;
 
         Ok(APIResult {
-            place_id: self.place_id,
-            osm_type: self.osm_type,
-            osm_id: self.osm_id,
-            coordinate: Coordinate { lat, lon },
-            class: self.class,
-            place_type: self.typ,
-            place_rank: self.place_rank,
-            importance: self.importance,
-            address_type: self.address_type,
-            name: self.name,
-            display_name: self.display_name,
+            // place_id: self.place_id,
+            // osm_type: self.osm_type,
+            // osm_id: self.osm_id,
+            // coordinate: Coordinate { lat, lon },
+            // class: self.class,
+            // place_type: self.typ,
+            // place_rank: self.place_rank,
+            // importance: self.importance,
+            // address_type: self.address_type,
+            // name: self.name,
+            // display_name: self.display_name,
             bounding_box: [
                 Coordinate {
                     lat: bounding0_lat,
@@ -68,17 +68,17 @@ impl APISearchResult {
 
 #[derive(Debug)]
 pub(crate) struct APIResult {
-    pub place_id: u64,
-    pub osm_type: String,
-    pub osm_id: u64,
-    pub coordinate: Coordinate,
-    pub class: String,
-    pub place_type: String,
-    pub place_rank: i32,
-    pub importance: f32,
-    pub address_type: String,
-    pub name: String,
-    pub display_name: String,
+    // pub place_id: u64,
+    // pub osm_type: String,
+    // pub osm_id: u64,
+    // pub coordinate: Coordinate,
+    // pub class: String,
+    // pub place_type: String,
+    // pub place_rank: i32,
+    // pub importance: f32,
+    // pub address_type: String,
+    // pub name: String,
+    // pub display_name: String,
     pub bounding_box: [Coordinate; 2],
 }
 

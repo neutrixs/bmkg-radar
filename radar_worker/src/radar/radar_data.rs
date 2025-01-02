@@ -36,8 +36,8 @@ struct RawAPIRadar {
 
 #[derive(Deserialize, Debug)]
 struct RawAPIRadarlist {
-    success: bool,
-    message: String,
+    // success: bool,
+    // message: String,
     #[serde(rename = "datas")]
     data: Vec<RawAPIRadar>,
 }
@@ -54,12 +54,12 @@ pub struct Legends {
     pub colors: Vec<Rgba<u8>>,
 }
 
-#[derive(Deserialize, Debug)]
-struct APILatest {
-    #[serde(rename = "timeUTC")]
-    time_utc: String,
-    file: String,
-}
+// #[derive(Deserialize, Debug)]
+// struct APILatest {
+//     #[serde(rename = "timeUTC")]
+//     time_utc: String,
+//     file: String,
+// }
 
 #[derive(Deserialize, Debug)]
 struct LastOneHour {
@@ -70,11 +70,11 @@ struct LastOneHour {
 
 #[derive(Deserialize, Debug)]
 struct RawAPIDetailedData {
-    #[serde(rename = "changeStatus")]
-    change_status: String,
+    // #[serde(rename = "changeStatus")]
+    // change_status: String,
     legends: APILegends,
-    #[serde(rename = "Latest")]
-    latest: APILatest,
+    // #[serde(rename = "Latest")]
+    // latest: APILatest,
     #[serde(rename = "LastOneHour")]
     last_one_hour: LastOneHour,
 }

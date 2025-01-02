@@ -4,7 +4,8 @@ use futures::future;
 use std::error::Error;
 
 impl RadarImagery {
-    pub async fn fetch_images(&self, radars: Vec<RadarData>) -> Result<Vec<Image>, Box<dyn Error +
+    pub(crate) async fn fetch_images(&self, radars: Vec<RadarData>) -> Result<Vec<Image>, Box<dyn
+    Error +
     Send + Sync>> {
         let mut radars_to_be_used = Vec::new();
         let mut result = Vec::new();
