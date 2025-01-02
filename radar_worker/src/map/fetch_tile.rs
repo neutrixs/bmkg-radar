@@ -1,5 +1,5 @@
-use crate::map::{fake_headers::_fake_headers, MapImagery};
-use crate::util::gen_connection_err;
+use crate::map::MapImagery;
+use crate::util::{auto_proxy, gen_connection_err};
 use bytes::Bytes;
 use image::{DynamicImage, ImageReader};
 use std::error::Error;
@@ -57,7 +57,7 @@ impl MapImagery {
         let client = reqwest::Client::builder()
             .timeout(Duration::from_secs(10))
             .build()?;
-        let response = client.get(&url).headers(_fake_headers()).send().await;
+        let response = auto_proxy(client, &url)?.send().await;
         if let Err(e) = response {
             return Err(gen_connection_err(e))
         }
