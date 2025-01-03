@@ -10,11 +10,11 @@ two packages:
 To install any of them, you can use the following commands:
 
 - For the Discord bot:
-  ```
+  ```shell
   cargo install --path discord
   ```
 - For the radar worker CLI tool:
-  ```
+  ```shell
   cargo install --path radar_worker
   ```
 
