@@ -3,8 +3,10 @@ mod fake_headers;
 mod fetch_tile;
 pub mod render;
 mod util;
+mod canvas_meta;
 
 use crate::common::Coordinate;
+use crate::map::canvas_meta::CanvasMetadata;
 use crate::map::util::_coord_to_tile_no_pow;
 use std::env;
 use std::time::Duration;
@@ -63,11 +65,16 @@ pub struct MapImagery {
     zoom_level: i32,
     style: MapStyle,
     timeout_duration: Duration,
+    canvas_meta: CanvasMetadata,
 }
 
 impl MapImagery {
     pub fn builder(bounds: [Coordinate; 2]) -> MapImageryBuilder {
         MapImageryBuilder::new(bounds)
+    }
+
+    pub fn get_image_size(&self) -> (u32, u32) {
+        self.canvas_meta.dimensions()
     }
 }
 
@@ -128,6 +135,7 @@ impl MapImageryBuilder {
             zoom_level,
             style: self.style.unwrap_or_else(|| MapStyle::Transport),
             timeout_duration: self.timeout_duration.unwrap_or_else(|| Duration::from_secs(10)),
+            canvas_meta: CanvasMetadata::new(self.bounds, zoom_level),
         }
     }
 }

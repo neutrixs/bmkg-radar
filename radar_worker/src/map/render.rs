@@ -1,128 +1,8 @@
-use crate::common::{Coordinate, Position};
-use crate::map::util::_get_tiles_range;
+use crate::common::Coordinate;
+use crate::map::canvas_meta::{CanvasMetadata, TILE_DIMENSION};
 use crate::map::MapImagery;
 use image::{DynamicImage, GenericImage, ImageBuffer, Rgba};
 use std::error::Error;
-
-struct TilesIterator {
-    index: usize,
-    data: Vec<i32>,
-}
-
-struct Approx {
-    north: i32,
-    west: i32,
-    south: i32,
-    east: i32,
-}
-
-struct TileBounds {
-    north: f64,
-    west: f64,
-    south: f64,
-    east: f64,
-}
-
-struct CanvasMetadata {
-    range: [Position; 2],
-    z: i32,
-}
-
-impl Iterator for TilesIterator {
-    type Item = i32;
-
-    fn next(&mut self) -> Option<Self::Item> {
-        if self.index < self.data.len() {
-            let item = self.data[self.index];
-            self.index += 1;
-            Some(item)
-        } else {
-            None
-        }
-    }
-}
-
-impl TileBounds {
-    pub fn approx(&self) -> Approx {
-        Approx {
-            north: self.north.floor() as i32,
-            west: self.west.floor() as i32,
-            south: self.south.ceil() as i32,
-            east: self.east.ceil() as i32,
-        }
-    }
-}
-
-impl CanvasMetadata {
-    fn new(bounds: [Coordinate; 2], zoom_level: i32) -> Self {
-        let range = _get_tiles_range(&bounds, zoom_level);
-        Self {
-            range,
-            z: zoom_level,
-        }
-    }
-
-    fn bounds(&self) -> TileBounds {
-        TileBounds {
-            north: self.range[0].y,
-            west: self.range[0].x,
-            south: self.range[1].y,
-            east: self.range[1].x,
-        }
-    }
-
-    fn normalize(&self) -> TileBounds {
-        let mut bounds = self.bounds();
-        let tiles_x_max = 2f64.powi(self.z);
-        if bounds.east < bounds.west {
-            bounds.east += tiles_x_max;
-        }
-        // umm since y works differently than x, I surely hope it will never clip
-
-        bounds
-    }
-
-    fn iter_rows(&self) -> TilesIterator {
-        let bounds = self.normalize().approx();
-        let mut data: Vec<i32> = Vec::new();
-        for y in bounds.north..bounds.south {
-            data.push(y);
-        }
-
-        TilesIterator {
-            index: 0,
-            data,
-        }
-    }
-
-    fn iter_cols(&self) -> TilesIterator {
-        let bounds = self.normalize().approx();
-        let max = 2i32.pow(self.z as u32);
-        let mut data: Vec<i32> = Vec::new();
-
-        for mut x in bounds.west..bounds.east {
-            if x >= max {
-                x -= max;
-            }
-            data.push(x);
-        }
-
-        TilesIterator {
-            index: 0,
-            data,
-        }
-    }
-
-    fn rows(&self) -> i32 {
-        let approx = self.normalize().approx();
-        approx.south - approx.north
-    }
-
-    fn cols(&self) -> i32 {
-        let approx = self.normalize().approx();
-        approx.east - approx.west
-    }
-}
 
 impl MapImagery {
     async fn prepare_images(
@@ -155,17 +35,13 @@ impl MapImagery {
         let meta = CanvasMetadata::new(self.bounds, self.zoom_level);
         let tiles_images = self.prepare_images(&meta).await?;
 
-        // get the result of the first one as a reference
-        let first_tile = tiles_images.get(0).ok_or("map tile amount is zero")?;
-        let width = first_tile.width();
-        let height = first_tile.height();
-
         let mut canvas: ImageBuffer<Rgba<u8>, Vec<u8>> =
-            ImageBuffer::new(meta.cols() as u32 * width, meta.rows() as u32 * height);
+            ImageBuffer::new(meta.cols() * TILE_DIMENSION, meta.rows() *
+                TILE_DIMENSION);
 
         for (i, tile) in tiles_images.iter().enumerate() {
-            let x = (i % meta.cols() as usize) as u32 * width;
-            let y = (i / meta.cols() as usize) as u32 * height;
+            let x = (i % meta.cols() as usize) as u32 * TILE_DIMENSION;
+            let y = (i / meta.cols() as usize) as u32 * TILE_DIMENSION;
             let rgba = tile.to_rgba8();
             canvas.copy_from(&rgba, x, y)?;
         }
@@ -173,22 +49,15 @@ impl MapImagery {
         // tiles_images not needed anymore
         drop(tiles_images);
 
-        let exact = meta.bounds();
-        let approx = meta.bounds().approx();
-        let crop_left = (width as f64 * (exact.west - approx.west as f64)) as i32;
-        let crop_top = (height as f64 * (exact.north - approx.north as f64)) as i32;
-        let crop_right = (width as f64 * (approx.east as f64 - exact.east)) as i32;
-        let crop_bottom = (height as f64 * (approx.south as f64 - exact.south)) as i32;
-
-        let canvas_width = canvas.width() as i32 - crop_left - crop_right;
-        let canvas_height = canvas.height() as i32 - crop_top - crop_bottom;
+        let (width, height) = meta.dimensions();
+        let crop = meta.get_crop();
 
         let cropped_canvas = canvas
             .sub_image(
-                crop_left as u32,
-                crop_top as u32,
-                canvas_width as u32,
-                canvas_height as u32,
+                crop.left,
+                crop.top,
+                width,
+                height,
             )
             .to_image();
 
