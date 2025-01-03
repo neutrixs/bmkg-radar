@@ -35,7 +35,7 @@ There are a few environment variables that must be set:
 
 If you wish to use a proxy, set the following variable:
 
-- **PROXY\_URL**: The URL of a Cloudflare Worker proxy.
+- **PROXY\_URL**: The URL of a [Cloudflare Worker](https://workers.cloudflare.com) proxy.
 
 ### Proxy URL Example
 
