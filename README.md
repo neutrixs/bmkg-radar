@@ -29,35 +29,35 @@ You can do a quick setup by using this script:
 
 ```javascript
 export default {
-    async fetch(request, env, ctx) {
-        const url = new URL(request.url);
-        const targetUrl = url.searchParams.get('url');
+  async fetch(request, env, ctx) {
+    const url = new URL(request.url);
+    const targetUrl = url.searchParams.get('url');
 
-        if (!targetUrl) {
-            return new Response('Missing "url" query parameter', {status: 400});
-        }
+    if (!targetUrl) {
+      return new Response('Missing "url" query parameter', {status: 400});
+    }
 
-        try {
-            const response = await fetch(decodeURIComponent(targetUrl), {
-                method: request.method,
-                headers: request.headers,
-                body: request.method === 'POST' ? await request.text() : null
-            });
+    try {
+      const response = await fetch(decodeURIComponent(targetUrl), {
+        method: request.method,
+        headers: request.headers,
+        body: request.method === 'POST' ? await request.text() : null
+      });
 
-            const proxyResponse = new Response(response.body, response);
+      const proxyResponse = new Response(response.body, response);
 
-            return proxyResponse;
-        } catch (error) {
-            return new Response('Error fetching the target URL', {status: 500});
-        }
-    },
+      return proxyResponse;
+    } catch (error) {
+      return new Response('Error fetching the target URL', {status: 500});
+    }
+  },
 };
 ```
 
 ### How It Works
 
-The program will use the proxy by appending the encoded target URL as a query parameter. For
-example:
+This section explains the optional proxy setup. If you’re using a proxy, the program will append the
+encoded target URL as a query parameter. For example:
 
 Original URL:
 
@@ -70,4 +70,7 @@ Resulted Proxy URL:
 ```
 https://proxy.example.com?url=https%3A%2F%2Fexample.com
 ```
+
+**Note**: This proxy configuration is entirely optional. It’s intended for advanced setups or
+debugging scenarios and is not required for standard usage of the program.
 
