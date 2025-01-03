@@ -29,7 +29,7 @@ pub enum MapStyle {
 }
 
 impl MapStyle {
-    pub(crate) fn url(&self, x: i32, y: i32, z: i32) -> String {
+    pub(crate) fn url(&self, x: u32, y: u32, z: i32) -> String {
         let base: &str = match self {
             Self::OpenCycleMap => "https://tile.thunderforest.com/cycle",
             Self::Transport => "https://tile.thunderforest.com/transport",

@@ -1,9 +1,11 @@
-use crate::common::{rgba_image_to_bytes, Context, Error};
+use crate::common::{rgba_image_to_bytes, Context};
+use image::RgbaImage;
 use poise::CreateReply;
 use radar_worker::map::{bounding, MapImagery, MapStyle};
-use radar_worker::radar::{RadarData, RadarImagery};
+use radar_worker::radar::{RadarData, RadarImagery, RenderResult};
 use radar_worker::util::overlay_image;
 use serenity::all::CreateAttachment;
+use serenity::futures;
 use std::time::Duration;
 
 fn format_description(radars: Vec<RadarData>) -> String {
@@ -37,22 +39,26 @@ fn format_description(radars: Vec<RadarData>) -> String {
     format
 }
 
+async fn send_error_message(ctx: &Context<'_>, error: Box<dyn std::error::Error + Send + Sync>) {
+    let message = format!("Error: {}", error.to_string());
+    let _ = ctx.say(message).await;
+}
+
 /// get the radar imagery of a place
 #[poise::command(slash_command)]
 pub async fn get_image(
     ctx: Context<'_>,
     #[description = "Place to search for"] place: String,
     #[description = "Use the map's dark mode version"] dark_mode: Option<bool>,
-) -> Result<(), Error> {
+) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
     ctx.defer().await?;
 
     let bounding_box = bounding::bounding_box(place, Duration::from_secs(10)).await;
     if let Err(e) = bounding_box {
-        let message = format!("Error: {}", e.to_string());
-        let _ = ctx.say(message).await;
+        send_error_message(&ctx, e).await;
         return Ok(());
     }
-    let bounding_box = bounding_box.unwrap();
+    let bounding_box = bounding_box?;
 
     let style = match dark_mode {
         Some(true) => MapStyle::TransportDark,
@@ -63,39 +69,35 @@ pub async fn get_image(
         .map_style(style)
         .timeout_duration(Duration::from_secs(20))
         .build();
-    let imagery_render_result = imagery.render().await;
-    if let Err(e) = imagery_render_result {
-        let message = format!("Error: {}", e.to_string());
-        let _ = ctx.say(message).await;
-        return Ok(());
-    }
-
-    let imagery_rendered = imagery_render_result.unwrap();
-    let (width, height) = imagery_rendered.dimensions();
-
     let radar = RadarImagery::builder(bounding_box)
         .enforce_age_threshold(true)
         .timeout_duration(Duration::from_secs(20))
         .build();
+    let (width, height) = imagery.get_image_size();
 
-    let radar_render_result = radar.render(width, height).await;
-    if let Err(e) = radar_render_result {
-        let message = format!("Error: {}", e.to_string());
-        let _ = ctx.say(message).await;
+    let (map_result, radar_result) = futures::join!(imagery.render(), radar.render(width, height));
+    if let Err(e) = map_result {
+        send_error_message(&ctx, e).await;
         return Ok(());
     }
-    let radar_render_result = radar_render_result.unwrap();
-    let radar_rendered = radar_render_result.image;
+    if let Err(e) = radar_result {
+        send_error_message(&ctx, e).await;
+        return Ok(());
+    }
+    // explicit type because RustRover is buggy
+    // it doesn't know how to deal with the macro
+    let map_image: RgbaImage = map_result?;
+    let radar_result: RenderResult = radar_result?;
+    let radar_image = radar_result.image;
 
-    let overlayed = overlay_image(imagery_rendered, radar_rendered, 0.7);
+    let overlayed = overlay_image(map_image, radar_image, 0.7);
     let overlayed = rgba_image_to_bytes(overlayed);
-
     let attachment = CreateAttachment::bytes(overlayed, "radar.png");
 
     let _ = ctx
         .send(
             CreateReply::default()
-                .content(format_description(radar_render_result.used_radars))
+                .content(format_description(radar_result.used_radars))
                 .attachment(attachment),
         )
         .await;

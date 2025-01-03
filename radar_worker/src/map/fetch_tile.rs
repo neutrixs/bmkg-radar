@@ -39,7 +39,8 @@ fn _load_file(path: &PathBuf) -> Result<Bytes, Box<dyn Error + Send + Sync>> {
 }
 
 impl MapImagery {
-    pub(crate) async fn fetch_tile(&self, x: i32, y: i32) -> Result<DynamicImage, Box<dyn Error + Send + Sync>> {
+    pub(crate) async fn fetch_tile(&self, x: u32, y: u32) -> Result<DynamicImage, Box<dyn Error +
+    Send + Sync>> {
         let url = self.style.url(x, y, self.zoom_level);
         let hash = _hash_tile_url(&url);
         let filename = format!("tile-{}", hash);

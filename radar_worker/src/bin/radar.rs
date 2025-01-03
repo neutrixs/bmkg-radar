@@ -1,7 +1,8 @@
 use clap::Parser;
+use image::RgbaImage;
 use radar_worker::map::bounding::bounding_box;
 use radar_worker::map::{MapImagery, MapStyle};
-use radar_worker::radar::RadarImagery;
+use radar_worker::radar::{RadarImagery, RenderResult};
 use radar_worker::util::overlay_image;
 use std::time::Duration;
 use tokio::runtime::Runtime;
@@ -24,7 +25,7 @@ struct Args {
         help = "Specify the maximum amount of map tiles",
         default_value = "50"
     )]
-    max_tiles: i32
+    max_tiles: i32,
 }
 
 fn main() {
@@ -37,22 +38,25 @@ fn main() {
         }
         let bounds = bounds.unwrap();
 
-        let map = MapImagery::builder(bounds).map_style(MapStyle::Transport).build();
-        let map_image = map.render().await;
-        if let Err(e) = map_image {
-            panic!("{}", e);
-        }
-        let map_image = map_image.unwrap();
-        let width = map_image.width();
-        let height = map_image.height();
+        let map = MapImagery::builder(bounds)
+            .map_style(MapStyle::Transport)
+            .build();
+        let radar = RadarImagery::builder(bounds)
+            .enforce_age_threshold(true)
+            .build();
+        let (width, height) = map.get_image_size();
 
-        let im = RadarImagery::builder(bounds).enforce_age_threshold(true).build();
-        let radar_render = im.render(width, height).await;
-        if let Err(e) = radar_render {
+        let (map_result, radar_result) = futures::join!(map.render(), radar.render(width, height));
+        if let Err(e) = map_result {
             panic!("{}", e);
         }
-        let radar_render = radar_render.unwrap();
-        let radar_image = radar_render.image;
+        if let Err(e) = radar_result {
+            panic!("{}", e);
+        }
+
+        let map_image: RgbaImage = map_result.unwrap();
+        let radar_result: RenderResult = radar_result.unwrap();
+        let radar_image = radar_result.image;
 
         let radar_image = overlay_image(map_image, radar_image, 0.7);
 

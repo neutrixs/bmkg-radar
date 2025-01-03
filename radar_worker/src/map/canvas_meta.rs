@@ -10,7 +10,7 @@ pub(crate) struct CanvasMetadata {
 
 pub(crate) struct TilesIterator {
     index: usize,
-    pub(crate) data: Vec<i32>,
+    pub(crate) data: Vec<u32>,
 }
 
 pub(crate) struct Crop {
@@ -21,10 +21,10 @@ pub(crate) struct Crop {
 }
 
 pub(crate) struct Approx {
-    pub(crate) north: i32,
-    pub(crate) west: i32,
-    pub(crate) south: i32,
-    pub(crate) east: i32,
+    pub(crate) north: u32,
+    pub(crate) west: u32,
+    pub(crate) south: u32,
+    pub(crate) east: u32,
 }
 
 pub(crate) struct TileBounds {
@@ -35,7 +35,7 @@ pub(crate) struct TileBounds {
 }
 
 impl Iterator for TilesIterator {
-    type Item = i32;
+    type Item = u32;
 
     fn next(&mut self) -> Option<Self::Item> {
         if self.index < self.data.len() {
@@ -51,10 +51,10 @@ impl Iterator for TilesIterator {
 impl TileBounds {
     pub fn approx(&self) -> Approx {
         Approx {
-            north: self.north.floor() as i32,
-            west: self.west.floor() as i32,
-            south: self.south.ceil() as i32,
-            east: self.east.ceil() as i32,
+            north: self.north.floor() as u32,
+            west: self.west.floor() as u32,
+            south: self.south.ceil() as u32,
+            east: self.east.ceil() as u32,
         }
     }
 }
@@ -90,7 +90,7 @@ impl CanvasMetadata {
 
     pub(crate) fn iter_rows(&self) -> TilesIterator {
         let bounds = self.normalize().approx();
-        let mut data: Vec<i32> = Vec::new();
+        let mut data: Vec<u32> = Vec::new();
         for y in bounds.north..bounds.south {
             data.push(y);
         }
@@ -103,8 +103,8 @@ impl CanvasMetadata {
 
     pub(crate) fn iter_cols(&self) -> TilesIterator {
         let bounds = self.normalize().approx();
-        let max = 2i32.pow(self.z as u32);
-        let mut data: Vec<i32> = Vec::new();
+        let max = 2u32.pow(self.z as u32);
+        let mut data: Vec<u32> = Vec::new();
 
         for mut x in bounds.west..bounds.east {
             if x >= max {
@@ -130,14 +130,14 @@ impl CanvasMetadata {
     }
 
     pub(crate) fn get_crop(&self) -> Crop {
-        let approx = self.normalize().approx();
-        let bounds = self.bounds().approx();
+        let approx = self.bounds().approx();
+        let exact = self.bounds();
 
         Crop {
-            top: (approx.north - bounds.north) as u32,
-            left: (bounds.west - approx.west) as u32,
-            bottom: (bounds.south - approx.south) as u32,
-            right: (approx.east - bounds.east) as u32,
+            top: ((exact.north - approx.north as f64) * TILE_DIMENSION as f64) as u32,
+            left: ((exact.west - approx.west as f64) * TILE_DIMENSION as f64) as u32,
+            bottom: ((approx.south as f64 - exact.south) * TILE_DIMENSION as f64) as u32,
+            right: ((approx.east as f64 - exact.east) * TILE_DIMENSION as f64) as u32,
         }
     }
 
