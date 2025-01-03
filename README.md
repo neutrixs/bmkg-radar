@@ -1,19 +1,41 @@
+# Overview
+
+This project is designed to render BMKG's weather radars on top of static map tiles. It includes
+two packages:
+
+- **radar\_worker**: Handles the image processing. The package contains both a `[[bin]]` target
+  and a `lib.rs`.
+- **discord**: A Discord bot with a command like `get_image` that uses the radar\_worker package.
+
+To install any of them, you can use the following commands:
+
+- For the Discord bot:
+  ```
+  cargo install --path discord
+  ```
+- For the radar worker CLI tool:
+  ```
+  cargo install --path radar_worker
+  ```
+
+The radar\_worker CLI tool comes with a `--help` function that is self-explanatory.
+
 # Configuration Documentation
 
 ## Required Environment Variables
 
-To run this program, the following environment variables must be set:
+There are a few environment variables that must be set:
 
-- **BMKG_APIKEY**: API key for
+- **BMKG\_APIKEY**: API key for
   accessing [BMKG services](https://radar.bmkg.go.id/api/documentation/).
-- **DISCORD_TOKEN**: Token for the [Discord BOT](https://discord.dev).
-- **THUNDERFOREST_APIKEY**: API key for [Thunderforest services](https://thunderforest.com).
+- **DISCORD\_TOKEN**: Token for the [Discord BOT](https://discord.dev).
+- **THUNDERFOREST\_APIKEY**: API key for [Thunderforest services](https://thunderforest.com).
 
 ## Optional Configuration (Using a Proxy)
 
 If you wish to use a proxy, set the following variable:
 
-- **PROXY_URL**: The URL of a Cloudflare Worker proxy.
+- **PROXY\_URL**: The URL of a Cloudflare Worker proxy.
 
 ### Proxy URL Example
 
@@ -56,8 +78,8 @@ export default {
 
 ### How It Works
 
-This section explains the optional proxy setup. If you’re using a proxy, the program will append the
-encoded target URL as a query parameter. For example:
+If you decide to use a proxy, the program will append the encoded target URL as a query parameter.
+For example:
 
 Original URL:
 
@@ -71,6 +93,5 @@ Resulted Proxy URL:
 https://proxy.example.com?url=https%3A%2F%2Fexample.com
 ```
 
-**Note**: This proxy configuration is entirely optional. It’s intended for advanced setups or
-debugging scenarios and is not required for standard usage of the program.
-
+**Note**: This proxy configuration is entirely optional. It’s intended for some specific scenarios
+where a normal fetch to the API may not be possible.
