@@ -61,8 +61,8 @@ pub async fn get_image(
     let bounding_box = bounding_box?;
 
     let style = match dark_mode {
-        Some(true) => MapStyle::TransportDark,
-        _ => MapStyle::Transport,
+        Some(false) => MapStyle::Transport,
+        _ => MapStyle::TransportDark,
     };
 
     let imagery = MapImagery::builder(bounding_box)
