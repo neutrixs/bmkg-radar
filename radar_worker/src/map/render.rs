@@ -1,4 +1,3 @@
-use crate::common::Coordinate;
 use crate::map::canvas_meta::{CanvasMetadata, TILE_DIMENSION};
 use crate::map::MapImagery;
 use image::{DynamicImage, GenericImage, ImageBuffer, Rgba};
@@ -68,6 +67,7 @@ impl MapImagery {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::common::Coordinate;
     use approx::assert_abs_diff_eq;
 
     #[test]
