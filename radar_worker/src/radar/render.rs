@@ -1,19 +1,33 @@
 use crate::common::PixelPosition;
 use crate::radar::color_scheme::pixel_to_color_scheme;
-use crate::radar::formula::{considerate_floor, min_q1_q2, q_inside, qx_circ, qx_half_dist, EqResult};
+use crate::radar::formula::{
+    considerate_floor, min_q1_q2, q_inside, qx_circ, qx_half_dist, EqResult,
+};
 use crate::radar::{Image, RadarData, RadarImagery, RenderResult};
 use chrono::Utc;
 use image::codecs::png::PngDecoder;
-use image::{DynamicImage, GenericImageView, ImageBuffer, RgbaImage};
+use image::{DynamicImage, GenericImageView, Rgba, RgbaImage};
+use rayon::prelude::*;
 use std::error::Error;
 use std::io::Cursor;
+use std::sync::{Arc, Mutex};
+
+struct PixelBatchJob {
+    x: u32,
+    y: u32,
+    pixel: Rgba<u8>,
+}
 
 struct RenderLoopResult {
     is_used: bool,
 }
 
 impl RadarImagery {
-    pub async fn render(&self, width: u32, height: u32) -> Result<RenderResult, Box<dyn Error + Send + Sync>> {
+    pub async fn render(
+        &self,
+        width: u32,
+        height: u32,
+    ) -> Result<RenderResult, Box<dyn Error + Send + Sync>> {
         let radars = self.get_radar_data().await;
         if let Err(e) = radars {
             return Err(format!("Failed to fetch radar datas: {}", e).into());
@@ -24,20 +38,36 @@ impl RadarImagery {
         }
         let radars = radars?;
 
-        let mut used_radars: Vec<RadarData> = Vec::new();
-        let mut canvas: RgbaImage = ImageBuffer::new(width, height);
+        let mut used_radars = Vec::<RadarData>::new();
+        let canvas = Arc::new(Mutex::new(RgbaImage::new(width, height)));
 
-        for radar in &radars {
-            let result = self.render_each_radar(&mut canvas, &radars, radar);
+        let results: Vec<(
+            Result<RenderLoopResult, Box<dyn Error + Send + Sync>>,
+            &Image,
+        )> = radars
+            .par_iter()
+            .map(|radar| {
+                let canvas = Arc::clone(&canvas);
+
+                let result = self.render_each_radar(canvas, (width, height), &radars, radar);
+                (result, radar)
+            })
+            .collect();
+
+        for (result, radar) in results {
             if let Err(e) = result {
-                return Err(format!("Error while rendering radar {}: {}", &radar.data.code, e)
-                    .into());
+                return Err(
+                    format!("Error while rendering radar {}: {}", &radar.data.code, e).into(),
+                );
             }
+
             let result = result?;
             if result.is_used {
                 used_radars.push(radar.data.clone());
             }
         }
+
+        let canvas = Arc::try_unwrap(canvas).unwrap().into_inner().unwrap();
 
         Ok(RenderResult {
             used_radars,
@@ -47,11 +77,13 @@ impl RadarImagery {
 
     fn render_each_radar(
         &self,
-        canvas: &mut RgbaImage,
+        canvas: Arc<Mutex<RgbaImage>>,
+        canvas_dimension: (u32, u32),
         radars: &Vec<Image>,
         radar: &Image,
     ) -> Result<RenderLoopResult, Box<dyn Error + Send + Sync>> {
         let mut is_used = false;
+        let (canvas_width, canvas_height) = canvas_dimension;
 
         let decoder = PngDecoder::new(Cursor::new(&radar.image));
         if let Err(e) = decoder {
@@ -64,7 +96,7 @@ impl RadarImagery {
             return Err(format!("Error while creating DynamicImage: {}", e).into());
         }
         let image = image?.to_rgba8();
-        let crop_result = self.crop(&image, &radar.data, canvas.width(), canvas.height());
+        let crop_result = self.crop(&image, &radar.data, canvas_width, canvas_height);
         let cropped_image = crop_result.image;
         let cropped_image_bounds = crop_result.cropped_bounds;
         let image_bounds = crop_result.accurate_bounds;
@@ -78,25 +110,23 @@ impl RadarImagery {
             PixelPosition {
                 x: canvas_image_pos[1].x.round() as u32,
                 y: canvas_image_pos[1].y.round() as u32,
-            }
+            },
         ];
 
         let overlapping = self.overlapping_radars(radars, &radar);
 
         // variable calculations that does NOT use y or x will be precomputed here
         let bounds_lon_dist = self.bounds[1].lon - self.bounds[0].lon;
-        let width_rel_bounds_lon_dist = canvas.width() as f64 / bounds_lon_dist;
+        let width_rel_bounds_lon_dist = canvas_width as f64 / bounds_lon_dist;
 
         let bounds_lat_dist = self.bounds[0].lat - self.bounds[1].lat;
-        let bounds_lat_dist_rel_cv_height = bounds_lat_dist / canvas.height()
-            as f64;
+        let bounds_lat_dist_rel_cv_height = bounds_lat_dist / canvas_height as f64;
 
         let cropped_im_lon_dist = cropped_image_bounds[1].lon - cropped_image_bounds[0].lon;
         let width_rel_cropped_im_lon_dist = cropped_image.width() as f64 / cropped_im_lon_dist;
 
         let cropped_im_lat_dist = cropped_image_bounds[0].lat - cropped_image_bounds[1].lat;
-        let height_rel_cropped_im_lat_dist = cropped_image.height() as
-            f64 / cropped_im_lat_dist;
+        let height_rel_cropped_im_lat_dist = cropped_image.height() as f64 / cropped_im_lat_dist;
 
         // striped pattern if it's an old image
         let striped: bool;
@@ -162,7 +192,8 @@ impl RadarImagery {
 
             longitude_bounds.sort_by(|a, b| a.partial_cmp(b).unwrap());
 
-            let pos_y_on_radar = (cropped_image_bounds[0].lat - latitude) * height_rel_cropped_im_lat_dist;
+            let pos_y_on_radar =
+                (cropped_image_bounds[0].lat - latitude) * height_rel_cropped_im_lat_dist;
             let pos_y_on_radar = considerate_floor(pos_y_on_radar) as u32;
 
             // longitude_bounds will always have an even length
@@ -176,7 +207,9 @@ impl RadarImagery {
                     Some(lon) => *lon,
                 };
 
-                if longitude_bound > image_bounds[1].lon || longitude_bound_end < image_bounds[0].lon {
+                if longitude_bound > image_bounds[1].lon
+                    || longitude_bound_end < image_bounds[0].lon
+                {
                     i += 2;
                     continue;
                 }
@@ -184,8 +217,10 @@ impl RadarImagery {
                 let lower_bound = longitude_bound.max(image_bounds[0].lon);
                 let upper_bound = longitude_bound_end.min(image_bounds[1].lon);
 
-                let lower_bound_on_canvas = (lower_bound - self.bounds[0].lon) * width_rel_bounds_lon_dist;
-                let upper_bound_on_canvas = (upper_bound - self.bounds[0].lon) * width_rel_bounds_lon_dist;
+                let lower_bound_on_canvas =
+                    (lower_bound - self.bounds[0].lon) * width_rel_bounds_lon_dist;
+                let upper_bound_on_canvas =
+                    (upper_bound - self.bounds[0].lon) * width_rel_bounds_lon_dist;
                 // technically these two should be rounded
                 // however the compromise is fine
                 // it'll be around 20% faster this way
@@ -193,12 +228,16 @@ impl RadarImagery {
                 let lower_bound_on_canvas = lower_bound_on_canvas as u32;
                 let upper_bound_on_canvas = upper_bound_on_canvas as u32;
 
-                let lower_bound_on_radar = (lower_bound - cropped_image_bounds[0].lon) * width_rel_cropped_im_lon_dist;
-                let upper_bound_on_radar = (upper_bound - cropped_image_bounds[0].lon) * width_rel_cropped_im_lon_dist;
+                let lower_bound_on_radar =
+                    (lower_bound - cropped_image_bounds[0].lon) * width_rel_cropped_im_lon_dist;
+                let upper_bound_on_radar =
+                    (upper_bound - cropped_image_bounds[0].lon) * width_rel_cropped_im_lon_dist;
 
                 let distance_on_radar = upper_bound_on_radar - lower_bound_on_radar;
                 let distance_on_canvas = (upper_bound_on_canvas - lower_bound_on_canvas) as f64;
                 let calc = distance_on_radar / distance_on_canvas;
+
+                let mut batch_job = Vec::<PixelBatchJob>::new();
 
                 for x in lower_bound_on_canvas..upper_bound_on_canvas {
                     // diagonal striped pattern
@@ -207,16 +246,24 @@ impl RadarImagery {
                         continue;
                     }
 
-                    let pos_x_on_radar = (x as f64 - lower_bound_on_canvas as f64) *
-                        calc + lower_bound_on_radar;
+                    let pos_x_on_radar =
+                        (x as f64 - lower_bound_on_canvas as f64) * calc + lower_bound_on_radar;
                     // technically should be rounded, but fine
                     // note if there will be ever some bug
                     let pos_x_on_radar = pos_x_on_radar as u32;
 
                     let pixel = cropped_image.get_pixel(pos_x_on_radar, pos_y_on_radar);
                     let pixel = pixel_to_color_scheme(pixel, &radar.data);
-                    canvas.put_pixel(x, y, pixel);
+                    batch_job.push(PixelBatchJob { x, y, pixel });
+                }
+
+                if batch_job.len() != 0 {
                     is_used = true;
+                }
+
+                let mut canvas = canvas.lock().unwrap();
+                for job in batch_job {
+                    canvas.put_pixel(job.x, job.y, job.pixel);
                 }
 
                 i += 2;
