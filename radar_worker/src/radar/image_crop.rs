@@ -217,6 +217,7 @@ mod tests {
             },
             range: Distance::Degrees(2.),
             priority: 0,
+            striped: false,
             images: vec![],
             legends: Legends {
                 levels: vec!(),

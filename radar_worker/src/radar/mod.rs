@@ -34,6 +34,7 @@ pub struct RadarData {
     pub center: Coordinate,
     pub range: Distance,
     pub priority: i32,
+    pub striped: bool,
     pub images: Vec<RadarImagesData>,
     pub legends: Legends,
 }
