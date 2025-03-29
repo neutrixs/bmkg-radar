@@ -90,7 +90,7 @@ pub async fn get_image(
     let radar_result: RenderResult = radar_result?;
     let radar_image = radar_result.image;
 
-    let overlayed = overlay_image(map_image, radar_image, 0.7);
+    let overlayed = overlay_image(map_image, radar_image, 0.5);
     let overlayed = rgba_image_to_bytes(overlayed);
     let attachment = CreateAttachment::bytes(overlayed, "radar.png");
 
