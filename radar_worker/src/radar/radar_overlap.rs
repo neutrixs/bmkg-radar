@@ -1,7 +1,5 @@
 use crate::common::Distance;
 use crate::radar::{Image, RadarData, RadarImagery};
-use chrono::Utc;
-use time::Duration;
 
 impl RadarImagery {
     pub(crate) fn overlapping_radars(&self, radars: &Vec<Image>, radar: &Image) -> Vec<RadarData> {
@@ -20,16 +18,7 @@ impl RadarImagery {
                 continue;
             }
 
-            let image_time = current.data.images.last().unwrap().time;
-            let elapsed = Utc::now() - image_time;
-            let elapsed = Duration::seconds(elapsed.num_seconds());
-
-            let mut cloned_current = current.data.clone();
-            if elapsed > self.age_threshold && self.enforce_age_threshold {
-                cloned_current.priority = -1;
-            }
-
-            overlapping.push(cloned_current);
+            overlapping.push(current.data.clone());
         }
 
         overlapping

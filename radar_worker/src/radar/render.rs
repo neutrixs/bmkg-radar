@@ -4,7 +4,6 @@ use crate::radar::formula::{
     considerate_floor, min_q1_q2, q_inside, qx_circ, qx_half_dist, EqResult,
 };
 use crate::radar::{Image, RadarData, RadarImagery, RenderResult};
-use chrono::Utc;
 use image::codecs::png::PngDecoder;
 use image::{DynamicImage, GenericImageView, Rgba, RgbaImage};
 use rayon::prelude::*;
@@ -128,16 +127,6 @@ impl RadarImagery {
         let cropped_im_lat_dist = cropped_image_bounds[0].lat - cropped_image_bounds[1].lat;
         let height_rel_cropped_im_lat_dist = cropped_image.height() as f64 / cropped_im_lat_dist;
 
-        // striped pattern if it's an old image
-        let striped: bool;
-        if self.enforce_age_threshold {
-            let elapsed = Utc::now() - radar.data.images.last().unwrap().time;
-            let elapsed = time::Duration::seconds(elapsed.num_seconds());
-            striped = elapsed > self.age_threshold;
-        } else {
-            striped = false;
-        }
-
         // done precomputing, loop over the area
         for y in canvas_image_pos[0].y..canvas_image_pos[1].y {
             let latitude = self.bounds[0].lat - (y as f64 + 0.5) * bounds_lat_dist_rel_cv_height;
@@ -242,7 +231,7 @@ impl RadarImagery {
                 for x in lower_bound_on_canvas..upper_bound_on_canvas {
                     // diagonal striped pattern
                     // it means fill in 2 pixels for every 6px of empty spots
-                    if striped && (x + y) % 8 > 2 {
+                    if radar.data.striped && (x + y) % 8 > 2 {
                         continue;
                     }
 

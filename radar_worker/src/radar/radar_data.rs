@@ -8,6 +8,7 @@ use image::Rgba;
 use serde::Deserialize;
 use std::env;
 use std::error::Error;
+use time::Duration;
 use url::Url;
 
 const RADAR_LIST_API_URL: &str = "https://radar.bmkg.go.id:8090/radarlist";
@@ -229,7 +230,7 @@ impl RadarImagery {
                 continue;
             }
 
-            let priority: i32;
+            let mut priority: i32;
             let range: Distance;
 
             if let Some(p) = self.priorities.get(&radar.code) {
@@ -244,6 +245,27 @@ impl RadarImagery {
                 range = DEFAULT_RANGE;
             }
 
+            let image_time = images.last().unwrap().time;
+            let elapsed = Utc::now() - image_time;
+            let elapsed = Duration::seconds(elapsed.num_seconds());
+            let mut striped = false;
+
+            if elapsed > self.age_threshold && self.enforce_age_threshold {
+                striped = true;
+                priority = -1;
+            }
+
+            // // DEBUG ONLY
+            // let mut images = images;
+            // if radar.code == "PWK" {
+            //     priority = -1;
+            //     striped = true;
+            //     images[5].url = String::from("https://fs.neutrixs.my.id/PWK_TEST.png");
+            // }
+            // if radar.code == "JAK" {
+            //     images[5].url = String::from("https://fs.neutrixs.my.id/JAK_TEST.png");
+            // }
+
             let formatted = RadarData {
                 bounds: [start, end],
                 city: radar.city,
@@ -254,6 +276,7 @@ impl RadarImagery {
                     lon: radar.lon,
                 },
                 priority,
+                striped,
                 range,
                 images,
                 legends,
