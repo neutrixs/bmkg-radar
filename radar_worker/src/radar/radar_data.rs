@@ -8,6 +8,7 @@ use image::Rgba;
 use serde::Deserialize;
 use std::env;
 use std::error::Error;
+use std::time::Duration as StdDuration;
 use time::Duration;
 use url::Url;
 
@@ -16,7 +17,7 @@ const RADAR_DETAIL_API_URL: &str = "https://radar.bmkg.go.id:8090/sidarmaimage";
 const RADAR_DETAIL_API_URL_NO_TOKEN: &str = "https://api-apps.bmkg.go.id/api/radar-image";
 
 #[derive(Deserialize, Debug)]
-struct RawAPIRadar {
+pub(crate) struct RawAPIRadar {
     // unprofessional API!
     // unacceptable!!
     #[serde(rename = "overlayTLC")]
@@ -36,7 +37,7 @@ struct RawAPIRadar {
 }
 
 #[derive(Deserialize, Debug)]
-struct RawAPIRadarlist {
+pub(crate) struct RawAPIRadarlist {
     // success: bool,
     // message: String,
     #[serde(rename = "datas")]
@@ -94,6 +95,27 @@ fn parse_legend(from: APILegends) -> Legends {
         levels,
         colors: colors_new,
     }
+}
+
+pub(crate) async fn get_radar_data(timeout: StdDuration) -> Result<RawAPIRadarlist, Box<dyn Error
++ Send + Sync>> {
+    // well well well
+    // who's got an invalid cert here??
+    // anyway I have to do the same in cURL too so... yeah...
+    let client = reqwest::Client::builder()
+        .danger_accept_invalid_certs(true)
+        .timeout(timeout)
+        .build()?;
+
+    let response = auto_proxy(client, RADAR_LIST_API_URL)?.send().await;
+    if let Err(e) = response {
+        return Err(gen_connection_err(e));
+    }
+
+    let response = response.unwrap().text().await?;
+    let response: RawAPIRadarlist = serde_json::from_str(&response)?;
+
+    Ok(response)
 }
 
 impl RadarImagery {

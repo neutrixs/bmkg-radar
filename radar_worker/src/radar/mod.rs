@@ -5,6 +5,7 @@ mod images_fetch;
 mod radar_overlap;
 mod image_crop;
 mod color_scheme;
+mod cache;
 
 use crate::common::{Coordinate, Distance};
 use crate::radar::radar_data::Legends;
