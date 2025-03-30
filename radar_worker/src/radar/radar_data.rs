@@ -31,7 +31,7 @@ pub(crate) struct RawAPIRadar {
     #[serde(rename = "Stasiun")]
     station: String,
     #[serde(rename = "kode")]
-    code: String,
+    pub(crate) code: String,
     lat: f64,
     lon: f64,
 }
