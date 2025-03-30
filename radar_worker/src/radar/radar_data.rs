@@ -41,7 +41,7 @@ pub(crate) struct RawAPIRadarlist {
     // success: bool,
     // message: String,
     #[serde(rename = "datas")]
-    data: Vec<RawAPIRadar>,
+    pub(crate) data: Vec<RawAPIRadar>,
 }
 
 #[derive(Deserialize, Debug, Clone)]
