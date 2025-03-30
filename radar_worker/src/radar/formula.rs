@@ -69,7 +69,7 @@ pub(crate) fn qx_circ(r: &RadarData, y: f64) -> EqResult {
     EqResult::Real(pos, neg)
 }
 
-pub(crate) fn min_q1_q2(radar: &RadarData, overlapping: &Vec<RadarData>, lon: f64, lat: f64) ->
+pub(crate) fn min_q1_q2(radar: &RadarData, overlapping: &Vec<&RadarData>, lon: f64, lat: f64) ->
 Vec<f64> {
     let mut result = Vec::new();
     for overlapping_radar in overlapping {

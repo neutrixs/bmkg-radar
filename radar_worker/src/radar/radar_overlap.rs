@@ -2,7 +2,11 @@ use crate::common::Distance;
 use crate::radar::{Image, RadarData, RadarImagery};
 
 impl RadarImagery {
-    pub(crate) fn overlapping_radars(&self, radars: &Vec<Image>, radar: &Image) -> Vec<RadarData> {
+    pub(crate) fn overlapping_radars<'a>(
+        &self,
+        radars: &'a Vec<Image>,
+        radar: &Image,
+    ) -> Vec<&'a RadarData> {
         let mut overlapping = Vec::new();
 
         for current in radars {
@@ -18,7 +22,7 @@ impl RadarImagery {
                 continue;
             }
 
-            overlapping.push(current.data.clone());
+            overlapping.push(&current.data);
         }
 
         overlapping
@@ -48,48 +52,36 @@ mod tests {
         // bounds does not matter here
         // the things that matter are the center and the range
         let a = RadarData {
-            bounds: [Coordinate { lat: 0., lon: 0. }, Coordinate { lat: 0., lon: 0. }],
+            bounds: [
+                Coordinate { lat: 0., lon: 0. },
+                Coordinate { lat: 0., lon: 0. },
+            ],
             city: "".to_string(),
             station: "".to_string(),
             code: "".to_string(),
-            center: Coordinate {
-                lat: 0.,
-                lon: 0.,
-            },
+            center: Coordinate { lat: 0., lon: 0. },
             range: Distance::Degrees(0.5),
             priority: 0,
             striped: false,
             images: vec![],
             legends: Legends {
-                levels: vec!(),
-                colors: vec!(),
+                levels: vec![],
+                colors: vec![],
             },
         };
 
         let mut b = a.clone();
         b.code = String::from("different");
-        b.center = Coordinate {
-            lat: 0.,
-            lon: 1.1,
-        };
+        b.center = Coordinate { lat: 0., lon: 1.1 };
         assert!(!is_overlapping(&a, &b));
 
-        b.center = Coordinate {
-            lat: 0.,
-            lon: 0.9,
-        };
+        b.center = Coordinate { lat: 0., lon: 0.9 };
         assert!(is_overlapping(&a, &b));
 
-        b.center = Coordinate {
-            lat: 0.7,
-            lon: 0.7,
-        };
+        b.center = Coordinate { lat: 0.7, lon: 0.7 };
         assert!(is_overlapping(&a, &b));
 
-        b.center = Coordinate {
-            lat: 0.8,
-            lon: 0.8,
-        };
+        b.center = Coordinate { lat: 0.8, lon: 0.8 };
         assert!(!is_overlapping(&a, &b));
     }
 }
