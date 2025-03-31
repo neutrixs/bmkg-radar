@@ -11,7 +11,7 @@ use crate::radar::radar_data::{Legends, RawAPIRadarlist};
 use bytes::Bytes;
 use chrono::{DateTime, Utc};
 use image::RgbaImage;
-use std::collections::HashMap;
+use std::collections::{HashMap, VecDeque};
 use std::time::Duration as StdDuration;
 use time::Duration;
 
@@ -19,6 +19,11 @@ const DEFAULT_THRESHOLD: Duration = Duration::minutes(20);
 pub const DEFAULT_RANGE: Distance = Distance::KM(240.0);
 pub const DEFAULT_PRIORITY: i32 = 0;
 pub(crate) const DATA_EXPIRE_MINS: i64 = 5;
+
+pub(crate) struct ImageCache {
+    pub(crate) image: Bytes,
+    pub(crate) date: DateTime<Utc>,
+}
 
 #[derive(Clone, Debug)]
 pub struct RadarImagesData {
@@ -56,6 +61,7 @@ pub struct RadarImagery {
     timeout_duration: StdDuration,
     cached_list: RawAPIRadarlist,
     cached_radar_data: HashMap<String, RadarData>,
+    cached_images: HashMap<String, VecDeque<ImageCache>>,
 }
 
 pub struct RadarImageryBuilder {
@@ -134,6 +140,7 @@ impl RadarImageryBuilder {
             priorities,
             cached_list: RawAPIRadarlist { data: vec![] },
             cached_radar_data: HashMap::new(),
+            cached_images: HashMap::new(),
         }
     }
 }

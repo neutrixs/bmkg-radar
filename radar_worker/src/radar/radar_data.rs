@@ -196,7 +196,7 @@ impl RadarImagery {
             self.cached_list = response;
         }
 
-        // TODO: do the loop asynchronously
+        // TODO: do the loop concurrently
 
         for radar in &self.cached_list.data {
             if let Some(data) = self.cached_radar_data.get(&radar.code) {
