@@ -23,7 +23,7 @@ struct RenderLoopResult {
 
 impl RadarImagery {
     pub async fn render(
-        &self,
+        &mut self,
         width: u32,
         height: u32,
     ) -> Result<RenderResult, Box<dyn Error + Send + Sync>> {

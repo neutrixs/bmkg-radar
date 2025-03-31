@@ -7,7 +7,7 @@ mod image_crop;
 mod color_scheme;
 
 use crate::common::{Coordinate, Distance};
-use crate::radar::radar_data::Legends;
+use crate::radar::radar_data::{Legends, RawAPIRadarlist};
 use bytes::Bytes;
 use chrono::{DateTime, Utc};
 use image::RgbaImage;
@@ -52,6 +52,7 @@ pub struct RadarImagery {
     ranges: HashMap<String, Distance>,
     priorities: HashMap<String, i32>,
     timeout_duration: StdDuration,
+    cached_list: RawAPIRadarlist,
 }
 
 pub struct RadarImageryBuilder {
@@ -128,6 +129,7 @@ impl RadarImageryBuilder {
             timeout_duration: self.timeout_duration.unwrap_or_else(|| StdDuration::from_secs(10)),
             ranges,
             priorities,
+            cached_list: RawAPIRadarlist { data: vec![] },
         }
     }
 }

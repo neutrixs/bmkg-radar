@@ -16,7 +16,7 @@ const RADAR_DETAIL_API_URL: &str = "https://radar.bmkg.go.id:8090/sidarmaimage";
 const RADAR_DETAIL_API_URL_NO_TOKEN: &str = "https://api-apps.bmkg.go.id/api/radar-image";
 
 #[derive(Deserialize, Debug)]
-struct RawAPIRadar {
+pub(crate) struct RawAPIRadar {
     // unprofessional API!
     // unacceptable!!
     #[serde(rename = "overlayTLC")]
@@ -36,11 +36,11 @@ struct RawAPIRadar {
 }
 
 #[derive(Deserialize, Debug)]
-struct RawAPIRadarlist {
+pub(crate) struct RawAPIRadarlist {
     // success: bool,
     // message: String,
     #[serde(rename = "datas")]
-    data: Vec<RawAPIRadar>,
+    pub(crate) data: Vec<RawAPIRadar>,
 }
 
 #[derive(Deserialize, Debug, Clone)]
@@ -173,25 +173,30 @@ impl RadarImagery {
         Ok((images, legends))
     }
 
-    pub(crate) async fn get_radar_data(&self) -> Result<Vec<RadarData>, Box<dyn Error + Send + Sync>> {
+    pub(crate) async fn get_radar_data(&mut self) -> Result<Vec<RadarData>, Box<dyn Error + Send +
+    Sync>> {
         let mut container: Vec<RadarData> = Vec::new();
-        // well well well
-        // who's got an invalid cert here??
-        // anyway I have to do the same in cURL too so... yeah...
-        let client = reqwest::Client::builder()
-            .danger_accept_invalid_certs(true)
-            .timeout(self.timeout_duration)
-            .build()?;
+        if self.cached_list.data.len() == 0 {
+            // well well well
+            // who's got an invalid cert here??
+            // anyway I have to do the same in cURL too so... yeah...
+            let client = reqwest::Client::builder()
+                .danger_accept_invalid_certs(true)
+                .timeout(self.timeout_duration)
+                .build()?;
 
-        let response = auto_proxy(client, RADAR_LIST_API_URL)?.send().await;
-        if let Err(e) = response {
-            return Err(gen_connection_err(e));
+            let response = auto_proxy(client, RADAR_LIST_API_URL)?.send().await;
+            if let Err(e) = response {
+                return Err(gen_connection_err(e));
+            }
+
+            let response = response.unwrap().text().await?;
+            let response: RawAPIRadarlist = serde_json::from_str(&response)?;
+
+            self.cached_list = response;
         }
 
-        let response = response.unwrap().text().await?;
-        let response: RawAPIRadarlist = serde_json::from_str(&response)?;
-
-        for radar in response.data {
+        for radar in &self.cached_list.data {
             if radar.overlay_tlc.len() < 2 {
                 return Err(format!(
                     "overlayTLC returned invalid length: {}. Expected: 2",
@@ -268,9 +273,9 @@ impl RadarImagery {
 
             let formatted = RadarData {
                 bounds: [start, end],
-                city: radar.city,
-                code: radar.code,
-                station: radar.station,
+                city: radar.city.clone(),
+                code: radar.code.clone(),
+                station: radar.station.clone(),
                 center: Coordinate {
                     lat: radar.lat,
                     lon: radar.lon,
@@ -305,7 +310,7 @@ mod tests {
                 lon: 107.144467,
             }
         ];
-        let im = RadarImagery::builder(bounds).build();
+        let mut im = RadarImagery::builder(bounds).build();
         let result = im.get_radar_data().await;
         if let Err(e) = result {
             panic!("{}", e);
