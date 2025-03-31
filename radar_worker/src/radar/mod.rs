@@ -18,6 +18,7 @@ use time::Duration;
 const DEFAULT_THRESHOLD: Duration = Duration::minutes(20);
 pub const DEFAULT_RANGE: Distance = Distance::KM(240.0);
 pub const DEFAULT_PRIORITY: i32 = 0;
+pub(crate) const DATA_EXPIRE_MINS: i64 = 5;
 
 #[derive(Clone, Debug)]
 pub struct RadarImagesData {
@@ -54,6 +55,7 @@ pub struct RadarImagery {
     priorities: HashMap<String, i32>,
     timeout_duration: StdDuration,
     cached_list: RawAPIRadarlist,
+    cached_radar_data: HashMap<String, RadarData>,
 }
 
 pub struct RadarImageryBuilder {
@@ -131,6 +133,7 @@ impl RadarImageryBuilder {
             ranges,
             priorities,
             cached_list: RawAPIRadarlist { data: vec![] },
+            cached_radar_data: HashMap::new(),
         }
     }
 }

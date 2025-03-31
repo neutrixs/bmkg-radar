@@ -1,6 +1,6 @@
 use crate::common::{Coordinate, Distance};
 use crate::radar::color_scheme::hex_to_rgb;
-use crate::radar::{RadarData, RadarImagesData, DEFAULT_RANGE};
+use crate::radar::{RadarData, RadarImagesData, DATA_EXPIRE_MINS, DEFAULT_RANGE};
 use crate::radar::{RadarImagery, DEFAULT_PRIORITY};
 use crate::util::{auto_proxy, gen_connection_err};
 use chrono::{NaiveDateTime, TimeZone, Utc};
@@ -199,6 +199,15 @@ impl RadarImagery {
         // TODO: do the loop asynchronously
 
         for radar in &self.cached_list.data {
+            if let Some(data) = self.cached_radar_data.get(&radar.code) {
+                let elapsed = Utc::now() - data.last_fetch;
+                let elapsed = Duration::seconds(elapsed.num_seconds());
+                if elapsed <= Duration::minutes(DATA_EXPIRE_MINS) {
+                    container.push(data.clone());
+                    continue;
+                }
+            }
+
             if radar.overlay_tlc.len() < 2 {
                 return Err(format!(
                     "overlayTLC returned invalid length: {}. Expected: 2",
@@ -290,6 +299,7 @@ impl RadarImagery {
                 last_fetch: Utc::now(),
             };
 
+            self.cached_radar_data.insert(radar.code.clone(), formatted.clone());
             container.push(formatted);
         }
 
