@@ -176,6 +176,7 @@ mod tests {
     use crate::common::Distance;
     use crate::radar::radar_data::{APILegends, Legends};
     use approx::assert_abs_diff_eq;
+    use chrono::Utc;
 
     #[test]
     fn test_crop() {
@@ -223,6 +224,7 @@ mod tests {
                 levels: vec!(),
                 colors: vec!(),
             },
+            last_fetch: Utc::now(),
         };
 
         let image = RgbaImage::new(2000, 2000);

@@ -196,6 +196,8 @@ impl RadarImagery {
             self.cached_list = response;
         }
 
+        // TODO: do the loop asynchronously
+
         for radar in &self.cached_list.data {
             if radar.overlay_tlc.len() < 2 {
                 return Err(format!(
@@ -285,6 +287,7 @@ impl RadarImagery {
                 range,
                 images,
                 legends,
+                last_fetch: Utc::now(),
             };
 
             container.push(formatted);

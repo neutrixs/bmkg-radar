@@ -37,6 +37,7 @@ pub struct RadarData {
     pub striped: bool,
     pub images: Vec<RadarImagesData>,
     pub legends: Legends,
+    pub last_fetch: DateTime<Utc>,
 }
 
 pub(crate) struct Image {

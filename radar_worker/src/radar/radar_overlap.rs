@@ -46,6 +46,7 @@ mod tests {
     use super::*;
     use crate::common::Coordinate;
     use crate::radar::radar_data::Legends;
+    use chrono::Utc;
 
     #[test]
     fn test_overlap() {
@@ -68,6 +69,7 @@ mod tests {
                 levels: vec![],
                 colors: vec![],
             },
+            last_fetch: Utc::now(),
         };
 
         let mut b = a.clone();
