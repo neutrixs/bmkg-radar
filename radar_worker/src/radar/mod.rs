@@ -112,6 +112,7 @@ impl RadarImageryBuilder {
         ranges.insert("JAK".to_string(), Distance::KM(240.));
         // only reliable up to 160KM
         ranges.insert("IWJ".to_string(), Distance::KM(160.));
+        ranges.insert("MCRC".to_string(), Distance::KM(120.));
 
         let mut priorities: HashMap<String, i32> = HashMap::new();
         priorities.insert("PWK".to_string(), 1);
@@ -119,6 +120,7 @@ impl RadarImageryBuilder {
         priorities.insert("CGK".to_string(), 1);
         // not that accurate
         priorities.insert("IWJ".to_string(), 0);
+        priorities.insert("MCRC".to_string(), 1);
 
         RadarImagery {
             bounds: self.bounds,
