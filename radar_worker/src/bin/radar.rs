@@ -41,7 +41,7 @@ fn main() {
         let map = MapImagery::builder(bounds)
             .map_style(MapStyle::Transport)
             .build();
-        let radar = RadarImagery::builder(bounds)
+        let mut radar = RadarImagery::builder(bounds)
             .enforce_age_threshold(true)
             .build();
         let (width, height) = map.get_image_size();

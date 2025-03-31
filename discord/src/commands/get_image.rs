@@ -69,7 +69,7 @@ pub async fn get_image(
         .map_style(style)
         .timeout_duration(Duration::from_secs(20))
         .build();
-    let radar = RadarImagery::builder(bounding_box)
+    let mut radar = RadarImagery::builder(bounding_box)
         .enforce_age_threshold(true)
         .timeout_duration(Duration::from_secs(20))
         .build();
