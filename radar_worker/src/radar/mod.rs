@@ -53,12 +53,12 @@ pub(crate) struct Image {
 
 pub struct RadarImagery {
     bounds: [Coordinate; 2],
-    age_threshold: Duration,
-    enforce_age_threshold: bool,
-    omit_radar: Vec<String>,
+    pub age_threshold: Duration,
+    pub enforce_age_threshold: bool,
+    pub omit_radar: Vec<String>,
     ranges: HashMap<String, Distance>,
     priorities: HashMap<String, i32>,
-    timeout_duration: StdDuration,
+    pub timeout_duration: StdDuration,
     cached_list: RawAPIRadarlist,
     cached_radar_data: HashMap<String, RadarData>,
     cached_images: HashMap<String, VecDeque<ImageCache>>,
