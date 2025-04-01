@@ -313,17 +313,7 @@ mod tests {
 
     #[tokio::test]
     async fn test_radar_data() {
-        let bounds = [
-            Coordinate {
-                lat: -6.0404882,
-                lon: 106.618351,
-            },
-            Coordinate {
-                lat: -6.4975978,
-                lon: 107.144467,
-            }
-        ];
-        let mut im = RadarImagery::builder(bounds).build();
+        let mut im = RadarImagery::builder().build();
         let result = im.get_radar_data().await;
         if let Err(e) = result {
             panic!("{}", e);
@@ -366,7 +356,7 @@ mod tests {
             }
         ];
 
-        let im = RadarImagery::builder(reference).build();
+        let im = RadarImagery::builder().build();
         assert!(im.is_overlapping(&bounds1));
         assert!(!im.is_overlapping(&bounds2));
     }

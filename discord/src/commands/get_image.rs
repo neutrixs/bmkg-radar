@@ -69,13 +69,14 @@ pub async fn get_image(
         .map_style(style)
         .timeout_duration(Duration::from_secs(20))
         .build();
-    let mut radar = RadarImagery::builder(bounding_box)
+    let mut radar = RadarImagery::builder()
         .enforce_age_threshold(true)
         .timeout_duration(Duration::from_secs(20))
         .build();
     let (width, height) = imagery.get_image_size();
 
-    let (map_result, radar_result) = futures::join!(imagery.render(), radar.render(width, height));
+    let (map_result, radar_result) = futures::join!(imagery.render(), radar.render(width, height,
+    bounding_box));
     if let Err(e) = map_result {
         send_error_message(&ctx, e).await;
         return Ok(());

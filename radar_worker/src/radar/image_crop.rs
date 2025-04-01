@@ -228,7 +228,7 @@ mod tests {
         };
 
         let image = RgbaImage::new(2000, 2000);
-        let im = RadarImagery::builder(bounds).build();
+        let im = RadarImagery::builder().build();
 
         let crop = im.crop(&image, &radar_test, 1827, 1827);
 

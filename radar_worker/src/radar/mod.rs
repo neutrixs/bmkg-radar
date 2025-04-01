@@ -65,7 +65,6 @@ pub struct RadarImagery {
 }
 
 pub struct RadarImageryBuilder {
-    bounds: [Coordinate; 2],
     age_threshold: Option<Duration>,
     enforce_age_threshold: Option<bool>,
     omit_radar: Option<Vec<String>>,
@@ -78,15 +77,14 @@ pub struct RenderResult {
 }
 
 impl RadarImagery {
-    pub fn builder(bounds: [Coordinate; 2]) -> RadarImageryBuilder {
-        RadarImageryBuilder::new(bounds)
+    pub fn builder() -> RadarImageryBuilder {
+        RadarImageryBuilder::new()
     }
 }
 
 impl RadarImageryBuilder {
-    fn new(bounds: [Coordinate; 2]) -> Self {
+    fn new() -> Self {
         Self {
-            bounds,
             age_threshold: None,
             enforce_age_threshold: None,
             omit_radar: None,
@@ -131,7 +129,7 @@ impl RadarImageryBuilder {
         priorities.insert("IWJ".to_string(), 0);
 
         RadarImagery {
-            bounds: self.bounds,
+            bounds: [Coordinate { lat: 0.0, lon: 0.0 }, Coordinate { lat: 0.0, lon: 0.0 }],
             age_threshold: self.age_threshold.unwrap_or(DEFAULT_THRESHOLD),
             enforce_age_threshold: self.enforce_age_threshold.unwrap_or_default(),
             omit_radar: self.omit_radar.unwrap_or_default(),

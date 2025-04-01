@@ -1,4 +1,4 @@
-use crate::common::PixelPosition;
+use crate::common::{Coordinate, PixelPosition};
 use crate::radar::color_scheme::pixel_to_color_scheme;
 use crate::radar::formula::{
     considerate_floor, min_q1_q2, q_inside, qx_circ, qx_half_dist, EqResult,
@@ -26,7 +26,9 @@ impl RadarImagery {
         &mut self,
         width: u32,
         height: u32,
+        bounds: [Coordinate; 2],
     ) -> Result<RenderResult, Box<dyn Error + Send + Sync>> {
+        self.bounds = bounds;
         let radars = self.get_radar_data().await;
         if let Err(e) = radars {
             return Err(format!("Failed to fetch radar datas: {}", e).into());

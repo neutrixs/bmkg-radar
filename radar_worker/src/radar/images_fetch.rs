@@ -88,7 +88,7 @@ mod tests {
     #[tokio::test]
     async fn test_fetch() {
         let bounds = [Coordinate { lat: 0., lon: 0. }, Coordinate { lat: 0., lon: 0. }];
-        let mut radar_imagery = RadarImagery::builder(bounds).build();
+        let mut radar_imagery = RadarImagery::builder().build();
         let radars = radar_imagery.get_radar_data().await.unwrap();
 
         let images = radar_imagery.fetch_images(radars).await;
