@@ -1,6 +1,6 @@
 use crate::common::{Coordinate, Distance};
 use crate::radar::color_scheme::hex_to_rgb;
-use crate::radar::{RadarData, RadarImagesData, DEFAULT_RANGE};
+use crate::radar::{RadarData, RadarImagesData, DATA_EXPIRE_MINS, DEFAULT_RANGE};
 use crate::radar::{RadarImagery, DEFAULT_PRIORITY};
 use crate::util::{auto_proxy, gen_connection_err};
 use chrono::{NaiveDateTime, TimeZone, Utc};
@@ -16,7 +16,7 @@ const RADAR_DETAIL_API_URL: &str = "https://radar.bmkg.go.id:8090/sidarmaimage";
 const RADAR_DETAIL_API_URL_NO_TOKEN: &str = "https://api-apps.bmkg.go.id/api/radar-image";
 
 #[derive(Deserialize, Debug)]
-struct RawAPIRadar {
+pub(crate) struct RawAPIRadar {
     // unprofessional API!
     // unacceptable!!
     #[serde(rename = "overlayTLC")]
@@ -36,11 +36,11 @@ struct RawAPIRadar {
 }
 
 #[derive(Deserialize, Debug)]
-struct RawAPIRadarlist {
+pub(crate) struct RawAPIRadarlist {
     // success: bool,
     // message: String,
     #[serde(rename = "datas")]
-    data: Vec<RawAPIRadar>,
+    pub(crate) data: Vec<RawAPIRadar>,
 }
 
 #[derive(Deserialize, Debug, Clone)]
@@ -173,25 +173,41 @@ impl RadarImagery {
         Ok((images, legends))
     }
 
-    pub(crate) async fn get_radar_data(&self) -> Result<Vec<RadarData>, Box<dyn Error + Send + Sync>> {
+    pub(crate) async fn get_radar_data(&mut self) -> Result<Vec<RadarData>, Box<dyn Error + Send +
+    Sync>> {
         let mut container: Vec<RadarData> = Vec::new();
-        // well well well
-        // who's got an invalid cert here??
-        // anyway I have to do the same in cURL too so... yeah...
-        let client = reqwest::Client::builder()
-            .danger_accept_invalid_certs(true)
-            .timeout(self.timeout_duration)
-            .build()?;
+        if self.cached_list.data.len() == 0 {
+            // well well well
+            // who's got an invalid cert here??
+            // anyway I have to do the same in cURL too so... yeah...
+            let client = reqwest::Client::builder()
+                .danger_accept_invalid_certs(true)
+                .timeout(self.timeout_duration)
+                .build()?;
 
-        let response = auto_proxy(client, RADAR_LIST_API_URL)?.send().await;
-        if let Err(e) = response {
-            return Err(gen_connection_err(e));
+            let response = auto_proxy(client, RADAR_LIST_API_URL)?.send().await;
+            if let Err(e) = response {
+                return Err(gen_connection_err(e));
+            }
+
+            let response = response.unwrap().text().await?;
+            let response: RawAPIRadarlist = serde_json::from_str(&response)?;
+
+            self.cached_list = response;
         }
 
-        let response = response.unwrap().text().await?;
-        let response: RawAPIRadarlist = serde_json::from_str(&response)?;
+        // TODO: do the loop concurrently
 
-        for radar in response.data {
+        for radar in &self.cached_list.data {
+            if let Some(data) = self.cached_radar_data.get(&radar.code) {
+                let elapsed = Utc::now() - data.last_fetch;
+                let elapsed = Duration::seconds(elapsed.num_seconds());
+                if elapsed <= Duration::minutes(DATA_EXPIRE_MINS) {
+                    container.push(data.clone());
+                    continue;
+                }
+            }
+
             if radar.overlay_tlc.len() < 2 {
                 return Err(format!(
                     "overlayTLC returned invalid length: {}. Expected: 2",
@@ -268,9 +284,9 @@ impl RadarImagery {
 
             let formatted = RadarData {
                 bounds: [start, end],
-                city: radar.city,
-                code: radar.code,
-                station: radar.station,
+                city: radar.city.clone(),
+                code: radar.code.clone(),
+                station: radar.station.clone(),
                 center: Coordinate {
                     lat: radar.lat,
                     lon: radar.lon,
@@ -280,8 +296,10 @@ impl RadarImagery {
                 range,
                 images,
                 legends,
+                last_fetch: Utc::now(),
             };
 
+            self.cached_radar_data.insert(radar.code.clone(), formatted.clone());
             container.push(formatted);
         }
 
@@ -295,17 +313,7 @@ mod tests {
 
     #[tokio::test]
     async fn test_radar_data() {
-        let bounds = [
-            Coordinate {
-                lat: -6.0404882,
-                lon: 106.618351,
-            },
-            Coordinate {
-                lat: -6.4975978,
-                lon: 107.144467,
-            }
-        ];
-        let im = RadarImagery::builder(bounds).build();
+        let mut im = RadarImagery::builder().build();
         let result = im.get_radar_data().await;
         if let Err(e) = result {
             panic!("{}", e);
@@ -348,7 +356,7 @@ mod tests {
             }
         ];
 
-        let im = RadarImagery::builder(reference).build();
+        let im = RadarImagery::builder().build();
         assert!(im.is_overlapping(&bounds1));
         assert!(!im.is_overlapping(&bounds2));
     }

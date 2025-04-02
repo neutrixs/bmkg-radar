@@ -7,17 +7,23 @@ mod image_crop;
 mod color_scheme;
 
 use crate::common::{Coordinate, Distance};
-use crate::radar::radar_data::Legends;
+use crate::radar::radar_data::{Legends, RawAPIRadarlist};
 use bytes::Bytes;
 use chrono::{DateTime, Utc};
 use image::RgbaImage;
-use std::collections::HashMap;
+use std::collections::{HashMap, VecDeque};
 use std::time::Duration as StdDuration;
 use time::Duration;
 
 const DEFAULT_THRESHOLD: Duration = Duration::minutes(20);
 pub const DEFAULT_RANGE: Distance = Distance::KM(240.0);
 pub const DEFAULT_PRIORITY: i32 = 0;
+pub(crate) const DATA_EXPIRE_MINS: i64 = 5;
+
+pub(crate) struct ImageCache {
+    pub(crate) image: Bytes,
+    pub(crate) date: DateTime<Utc>,
+}
 
 #[derive(Clone, Debug)]
 pub struct RadarImagesData {
@@ -37,6 +43,7 @@ pub struct RadarData {
     pub striped: bool,
     pub images: Vec<RadarImagesData>,
     pub legends: Legends,
+    pub last_fetch: DateTime<Utc>,
 }
 
 pub(crate) struct Image {
@@ -46,16 +53,18 @@ pub(crate) struct Image {
 
 pub struct RadarImagery {
     bounds: [Coordinate; 2],
-    age_threshold: Duration,
-    enforce_age_threshold: bool,
-    omit_radar: Vec<String>,
+    pub age_threshold: Duration,
+    pub enforce_age_threshold: bool,
+    pub omit_radar: Vec<String>,
     ranges: HashMap<String, Distance>,
     priorities: HashMap<String, i32>,
-    timeout_duration: StdDuration,
+    pub timeout_duration: StdDuration,
+    cached_list: RawAPIRadarlist,
+    cached_radar_data: HashMap<String, RadarData>,
+    cached_images: HashMap<String, VecDeque<ImageCache>>,
 }
 
 pub struct RadarImageryBuilder {
-    bounds: [Coordinate; 2],
     age_threshold: Option<Duration>,
     enforce_age_threshold: Option<bool>,
     omit_radar: Option<Vec<String>>,
@@ -68,15 +77,14 @@ pub struct RenderResult {
 }
 
 impl RadarImagery {
-    pub fn builder(bounds: [Coordinate; 2]) -> RadarImageryBuilder {
-        RadarImageryBuilder::new(bounds)
+    pub fn builder() -> RadarImageryBuilder {
+        RadarImageryBuilder::new()
     }
 }
 
 impl RadarImageryBuilder {
-    fn new(bounds: [Coordinate; 2]) -> Self {
+    fn new() -> Self {
         Self {
-            bounds,
             age_threshold: None,
             enforce_age_threshold: None,
             omit_radar: None,
@@ -123,13 +131,16 @@ impl RadarImageryBuilder {
         priorities.insert("MCRC".to_string(), 1);
 
         RadarImagery {
-            bounds: self.bounds,
+            bounds: [Coordinate { lat: 0.0, lon: 0.0 }, Coordinate { lat: 0.0, lon: 0.0 }],
             age_threshold: self.age_threshold.unwrap_or(DEFAULT_THRESHOLD),
             enforce_age_threshold: self.enforce_age_threshold.unwrap_or_default(),
             omit_radar: self.omit_radar.unwrap_or_default(),
             timeout_duration: self.timeout_duration.unwrap_or_else(|| StdDuration::from_secs(10)),
             ranges,
             priorities,
+            cached_list: RawAPIRadarlist { data: vec![] },
+            cached_radar_data: HashMap::new(),
+            cached_images: HashMap::new(),
         }
     }
 }

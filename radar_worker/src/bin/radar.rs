@@ -41,12 +41,13 @@ fn main() {
         let map = MapImagery::builder(bounds)
             .map_style(MapStyle::Transport)
             .build();
-        let radar = RadarImagery::builder(bounds)
+        let mut radar = RadarImagery::builder()
             .enforce_age_threshold(true)
             .build();
         let (width, height) = map.get_image_size();
 
-        let (map_result, radar_result) = futures::join!(map.render(), radar.render(width, height));
+        let (map_result, radar_result) = futures::join!(map.render(), radar.render(width, height,
+        bounds));
         if let Err(e) = map_result {
             panic!("{}", e);
         }

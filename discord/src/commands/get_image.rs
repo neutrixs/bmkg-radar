@@ -2,7 +2,7 @@ use crate::common::{rgba_image_to_bytes, Context};
 use image::RgbaImage;
 use poise::CreateReply;
 use radar_worker::map::{bounding, MapImagery, MapStyle};
-use radar_worker::radar::{RadarData, RadarImagery, RenderResult};
+use radar_worker::radar::{RadarData, RenderResult};
 use radar_worker::util::overlay_image;
 use serenity::all::CreateAttachment;
 use serenity::futures;
@@ -69,13 +69,12 @@ pub async fn get_image(
         .map_style(style)
         .timeout_duration(Duration::from_secs(20))
         .build();
-    let radar = RadarImagery::builder(bounding_box)
-        .enforce_age_threshold(true)
-        .timeout_duration(Duration::from_secs(20))
-        .build();
+    let mut radar = ctx.data().radar.lock().await;
+
     let (width, height) = imagery.get_image_size();
 
-    let (map_result, radar_result) = futures::join!(imagery.render(), radar.render(width, height));
+    let (map_result, radar_result) = futures::join!(imagery.render(), radar.render(width, height,
+    bounding_box));
     if let Err(e) = map_result {
         send_error_message(&ctx, e).await;
         return Ok(());
